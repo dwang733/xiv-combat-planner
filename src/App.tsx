@@ -1,22 +1,42 @@
+import "vis-data/peer";
+import "vis-timeline/peer";
+import "vis-timeline/styles/vis-timeline-graph2d.min.css";
+
 import React, { useEffect, useRef } from "react";
 import "./App.css";
 import logo from "./logo.svg";
-import { Timeline } from "vis-timeline";
-import { DataSet } from "vis-data";
+import moment from "moment/moment";
+import { Timeline } from "vis-timeline/peer";
+import { DataSet } from "vis-data/peer";
 
 function TimelineComponent() {
   const items = useRef(
     new DataSet([
-      { id: 1, content: "item 1", start: "2013-04-20" },
-      { id: 2, content: "item 2", start: "2013-04-14" },
-      { id: 3, content: "item 3", start: "2013-04-18" },
-      { id: 4, content: "item 4", start: "2013-04-16", end: "2013-04-19" },
-      { id: 5, content: "item 5", start: "2013-04-25" },
-      { id: 6, content: "item 6", start: "2013-04-27" }
+      { id: 1, content: "item 1", start: 0 },
+      { id: 2, content: "item 2", start: 1000 },
+      { id: 3, content: "item 3", start: 2000 },
+      { id: 4, content: "item 4", start: 3000, end: 5000 },
+      { id: 5, content: "item 5", start: 4000 },
+      { id: 6, content: "item 6", start: 5000 }
     ])
   );
-  // Configuration for the Timeline
-  const options = useRef({});
+  // // Configuration for the Timeline
+  const options = useRef({
+    start: -5000,
+    end: 60000,
+    min: -30000, // -30 sec
+    max: 1800000, // 30 min
+    format: {
+      majorLabels: {
+        second: "m[m]"
+      }
+    },
+    zoomMin: 10000,
+    zoomMax: 600000,
+    moment: function(date: moment.MomentInput) {
+      return moment(date).utc();
+    }
+  });
 
   const timelineDivRef = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
@@ -27,6 +47,10 @@ function TimelineComponent() {
           timelineDivRef.current &&
           new Timeline(timelineDivRef.current, items.current, options.current);
       }
+
+      // timeline.current =
+      //   timelineDivRef.current &&
+      //   new Timeline(timelineDivRef.current, items.current, options.current);
     },
     [timelineDivRef, items, options]
   );
@@ -37,23 +61,6 @@ function TimelineComponent() {
 function App(): JSX.Element {
   return (
     <div className="App">
-      <header className="App-header">
-        <script type="text/javascript" src="https://unpkg.com/moment@latest" />
-        <script
-          type="text/javascript"
-          src="https://unpkg.com/vis-data@latest/peer/umd/vis-data.min.js"
-        />
-        <script
-          type="text/javascript"
-          src="https://unpkg.com/vis-timeline@latest/peer/umd/vis-timeline-graph2d.min.js"
-        />
-        <link
-          rel="stylesheet"
-          type="text/css"
-          href="https://unpkg.com/vis-timeline/styles/vis-timeline-graph2d.min.css"
-        />
-      </header>
-
       <TimelineComponent />
     </div>
   );
