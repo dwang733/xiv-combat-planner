@@ -4,7 +4,6 @@ import "vis-timeline/styles/vis-timeline-graph2d.min.css";
 
 import React, { useEffect, useRef } from "react";
 import "./App.css";
-import logo from "./logo.svg";
 import moment from "moment/moment";
 import { Timeline } from "vis-timeline/peer";
 import { DataSet } from "vis-data/peer";
