@@ -6,6 +6,7 @@ import React, { useEffect, useRef } from 'react';
 import { DataSet } from 'vis-data/peer';
 import { Timeline } from 'vis-timeline/peer';
 import moment from 'moment/moment';
+import Summoner from './jobs/summoner';
 
 function TimelineComponent() {
   const items = useRef(
@@ -59,6 +60,8 @@ function TimelineComponent() {
     // timeline.current =
     //   timelineDivRef.current &&
     //   new Timeline(timelineDivRef.current, items.current, options.current);
+    const test = new Summoner();
+    console.log(`Name: ${test.summonBahamut.name}, nextGCD: ${test.summonBahamut.nextGCD}`);
   }, [timelineDivRef, items, options]);
 
   return <div id="visualization" ref={timelineDivRef} />;
