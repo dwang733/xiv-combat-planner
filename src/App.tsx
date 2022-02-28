@@ -20,17 +20,28 @@ function TimelineComponent() {
   );
   // // Configuration for the Timeline
   const options = useRef({
-    start: -5000,
-    end: 60000,
-    min: -30000, // -30 sec
-    max: 1800000, // 30 min
+    start: -5 * 1000, // -5 sec
+    end: 1 * 60 * 1000, // 1 min
+    min: -30 * 1000, // -30 sec
+    max: 30 * 60 * 1000, // 30 min
+    minHeight: 300,
+    zoomMin: 10 * 1000,
+    zoomMax: 10 * 60 * 1000,
+    zoomFriction: 20,
     format: {
-      majorLabels: {
-        second: 'm[m]',
+      minorLabels: {
+        second: 's',
+        minute: 'm[m]',
+      },
+      majorLabels: (date: Date, scale: string) => {
+        if (scale !== 'second') {
+          return '';
+        }
+
+        const dateMoment = moment(date);
+        return dateMoment.minute() < 59 ? dateMoment.format('m[m]') : '-1m';
       },
     },
-    zoomMin: 10000,
-    zoomMax: 600000,
     moment(date: moment.MomentInput) {
       return moment(date).utc();
     },
@@ -53,7 +64,7 @@ function TimelineComponent() {
   return <div id="visualization" ref={timelineDivRef} />;
 }
 
-function App(): JSX.Element {
+function App() {
   return (
     <div className="App">
       <TimelineComponent />
