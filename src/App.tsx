@@ -2,52 +2,20 @@ import 'vis-timeline/styles/vis-timeline-graph2d.min.css';
 import './App.css';
 
 import React, { useEffect, useRef } from 'react';
-import ReactDOMServer from 'react-dom/server';
 
 import { DataSet } from 'vis-data/peer';
 import { Timeline, TimelineItem, TimelineOptions } from 'vis-timeline/peer';
 import moment from 'moment/moment';
 
-import { GCD, Job } from './actionTypes';
 import Summoner from './jobs/summoner';
-
-function ActionListItem(props: { job: Job; action: GCD }) {
-  const { job, action } = props;
-  const iconPath = `./${job.abbr.toLowerCase()}/${action.name}.png`;
-  const iconImageElement = <img src={iconPath} alt={action.name} />;
-
-  function handleDragStart(eventArg: React.DragEvent<HTMLLIElement>) {
-    const event = eventArg;
-    event.dataTransfer.effectAllowed = 'move';
-    const item: Omit<TimelineItem, 'start'> = {
-      id: new Date().toString(),
-      type: 'box',
-      content: ReactDOMServer.renderToStaticMarkup(iconImageElement),
-    };
-    event.dataTransfer.setData('text', JSON.stringify(item));
-  }
-
-  return (
-    <li draggable="true" className="action-list-item" onDragStart={handleDragStart}>
-      {iconImageElement}
-    </li>
-  );
-}
-
-function ActionList(props: { job: Job }) {
-  const { job } = props;
-  const actionListEntries = job.actions.map((action) => (
-    <ActionListItem key={action.name} job={job} action={action} />
-  ));
-
-  return (
-    <div id="actions-div">
-      <ul id="actions">{actionListEntries}</ul>
-    </div>
-  );
-}
+import ActionList from './ActionList';
 
 function TimelineComponent() {
+  function onAdd(item: TimelineItem, callback: (item: TimelineItem | null) => void) {
+    console.log(item.content, moment(item.start).second());
+    callback(item);
+  }
+
   const items = useRef(
     new DataSet([
       { id: 1, content: 'item 1', start: 0 },
@@ -58,7 +26,8 @@ function TimelineComponent() {
       { id: 6, content: 'item 6', start: 5000 },
     ])
   );
-  // // Configuration for the Timeline
+
+  // Configuration for the Timeline
   const options = useRef<TimelineOptions>({
     start: -5 * 1000, // -5 sec
     end: 1 * 60 * 1000, // 1 min
@@ -69,6 +38,7 @@ function TimelineComponent() {
     zoomMax: 10 * 60 * 1000,
     zoomFriction: 20,
     editable: true,
+    onAdd,
     format: {
       minorLabels: (date: Date, scale: string) => {
         // Show negative seconds if minute < 0
