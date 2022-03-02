@@ -24,3 +24,9 @@ export class GCD {
 
 // Require name and potency when initializing GCD.
 export type GCDOptions = Partial<GCD> & Pick<GCD, 'name' | 'potency'>;
+
+export interface Job {
+  name: string;
+  abbr: string;
+  actions: GCD[];
+}
