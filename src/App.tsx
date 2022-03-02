@@ -70,17 +70,25 @@ function TimelineComponent() {
     zoomFriction: 20,
     editable: true,
     format: {
-      minorLabels: {
-        second: 's',
-        minute: 'm[m]',
-      },
-      majorLabels: (date: Date, scale: string) => {
-        if (scale !== 'second') {
-          return '';
+      minorLabels: (date: Date, scale: string) => {
+        // Show negative seconds if minute < 0
+        const dateMoment = moment(date);
+        if (scale === 'second') {
+          const second = dateMoment.minute() < 40 ? dateMoment.second() : dateMoment.second() - 60;
+          return second.toString();
         }
 
-        const dateMoment = moment(date);
-        return dateMoment.minute() < 59 ? dateMoment.format('m[m]') : '-1m';
+        return dateMoment.format('m[m]');
+      },
+      majorLabels: (date: Date, scale: string) => {
+        // Show negative minutes if >= 40
+        if (scale === 'second') {
+          const dateMoment = moment(date);
+          const minute = dateMoment.minute() < 40 ? dateMoment.minute() : dateMoment.minute() - 60;
+          return `${minute}m`;
+        }
+
+        return '';
       },
     },
     moment: (date: moment.MomentInput) => moment(date).utc(),
