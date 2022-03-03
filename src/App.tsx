@@ -41,7 +41,7 @@ function TimelineComponent() {
     onAdd,
     format: {
       minorLabels: (date: Date, scale: string) => {
-        // Show negative seconds if minute < 0
+        // Show negative seconds in pre-pull
         const dateMoment = moment(date);
         if (scale === 'second') {
           const second = dateMoment.minute() < 40 ? dateMoment.second() : dateMoment.second() - 60;
@@ -51,7 +51,7 @@ function TimelineComponent() {
         return dateMoment.format('m[m]');
       },
       majorLabels: (date: Date, scale: string) => {
-        // Show negative minutes if >= 40
+        // Show negative minutes in pre-pull
         if (scale === 'second') {
           const dateMoment = moment(date);
           const minute = dateMoment.minute() < 40 ? dateMoment.minute() : dateMoment.minute() - 60;
