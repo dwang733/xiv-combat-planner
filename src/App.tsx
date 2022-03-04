@@ -19,12 +19,10 @@ function TimelineComponent() {
     console.log(gcdItem);
 
     const gcdBackgroundItem: DatasetItem = {
-      id: `${gcdItem.job}-${gcdItem.name}-${new Date().toString()}`,
+      id: `${gcdItem.id}-gcdBackground`,
       content: '',
       start: gcdItem.start,
-      end: moment(gcdItem.start)
-        .add(gcdItem.nextGCD ?? 0, 'seconds')
-        .toDate(),
+      end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toDate(),
       type: 'background',
     };
     items.current.add(gcdBackgroundItem);

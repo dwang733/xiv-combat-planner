@@ -13,7 +13,7 @@ const baseActions: Omit<GCD, 'job'>[] = [
     mpCost: 0,
   },
 ];
-const actions: GCD[] = baseActions.map((a) => ({ ...a, job: name }));
+const actions: GCD[] = baseActions.map((a) => ({ ...a, job: abbr }));
 
 export default class Summoner implements Job {
   name = name;
