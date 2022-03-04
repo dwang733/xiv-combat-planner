@@ -1,29 +1,34 @@
+import { TimelineItem } from 'vis-timeline/peer';
+
 /**
  * Implements a GCD action.
  */
 export class GCD {
-  /** The name of the action. */
-  name: string = '';
-  /** The base damage of the action. */
-  potency: number = 0;
-  /** How long to execute an action, in seconds. */
-  castTime: number = 0;
-  /** How long before next GCD can be casted, in seconds. */
-  nextGCD: number = 2.5;
-  /** How long before action can be executed again, in seconds. */
-  cooldown: number = 2.5;
-  /** The amount of MP it costs to use the action. */
-  mpCost: number = 0;
-  /** The function that runs after the action is executed. */
-  onEffect: Function | null = null;
-
-  constructor(options: GCDOptions) {
-    Object.assign(this, options);
-  }
+  /**
+   *
+   * @param job The job that uses this action.
+   * @param name The name of the action.
+   * @param potency The base damage of the action.
+   * @param castTime How long to execute an action, in seconds.
+   * @param nextGCD How long before next GCD can be casted, in seconds.
+   * @param cooldown How long before action can be executed again, in seconds.
+   * @param mpCost The amount of MP it costs to use the action
+   * @param onEffect The function that runs after the action is executed.
+   */
+  constructor(
+    public job: string,
+    public name: string,
+    public potency: number,
+    public castTime: number,
+    public nextGCD: number,
+    public cooldown: number,
+    public mpCost: number,
+    public onEffect?: Function
+  ) {}
 }
 
-// Require name and potency when initializing GCD.
-export type GCDOptions = Partial<GCD> & Pick<GCD, 'name' | 'potency'>;
+export type GCDItem = TimelineItem & GCD;
+export type DatasetItem = TimelineItem & Partial<GCD>;
 
 export interface Job {
   name: string;
