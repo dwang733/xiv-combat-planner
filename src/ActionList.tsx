@@ -1,8 +1,7 @@
 import React from 'react';
 import ReactDOMServer from 'react-dom/server';
 
-import { TimelineItem } from 'vis-timeline/peer';
-import { GCD, Job } from './actionTypes';
+import { GCDItem, GCD, Job } from './actionTypes';
 
 function ActionListItem(props: { job: Job; action: GCD }) {
   const { job, action } = props;
@@ -12,10 +11,11 @@ function ActionListItem(props: { job: Job; action: GCD }) {
   function handleDragStart(eventArg: React.DragEvent<HTMLLIElement>) {
     const event = eventArg;
     event.dataTransfer.effectAllowed = 'move';
-    const item: Omit<TimelineItem, 'start'> = {
-      id: new Date().toString(),
-      type: 'box',
+    const item: Partial<GCDItem> = {
+      id: `${job}-${action.name}-${new Date().toString()}`,
+      type: 'point',
       content: ReactDOMServer.renderToStaticMarkup(iconImageElement),
+      ...action,
     };
     event.dataTransfer.setData('text', JSON.stringify(item));
   }

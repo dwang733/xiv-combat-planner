@@ -9,23 +9,28 @@ import moment from 'moment/moment';
 
 import Summoner from './jobs/summoner';
 import ActionList from './ActionList';
+import { DatasetItem, GCDItem } from './actionTypes';
 
 function TimelineComponent() {
-  function onAdd(item: TimelineItem, callback: (item: TimelineItem | null) => void) {
-    console.log(item.content, moment(item.start).second());
-    callback(item);
-  }
+  const items = useRef(new DataSet<DatasetItem>());
 
-  const items = useRef(
-    new DataSet([
-      { id: 1, content: 'item 1', start: 0 },
-      { id: 2, content: 'item 2', start: 1000 },
-      { id: 3, content: 'item 3', start: 2000 },
-      { id: 4, content: 'item 4', start: 3000, end: 5000 },
-      { id: 5, content: 'item 5', start: 4000 },
-      { id: 6, content: 'item 6', start: 5000 },
-    ])
-  );
+  function onAdd(ti: TimelineItem, callback: (item: TimelineItem | null) => void) {
+    const gcdItem = ti as GCDItem;
+    console.log(gcdItem);
+
+    const gcdBackgroundItem: DatasetItem = {
+      id: `${gcdItem.job}-${gcdItem.name}-${new Date().toString()}`,
+      content: '',
+      start: gcdItem.start,
+      end: moment(gcdItem.start)
+        .add(gcdItem.nextGCD ?? 0, 'seconds')
+        .toDate(),
+      type: 'background',
+    };
+    items.current.add(gcdBackgroundItem);
+
+    callback(ti);
+  }
 
   // Configuration for the Timeline
   const options = useRef<TimelineOptions>({
