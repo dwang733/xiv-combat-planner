@@ -32,16 +32,24 @@ function TimelineComponent() {
 
   // Configuration for the Timeline
   const options = useRef<TimelineOptions>({
+    /** Horizontal axis time settings */
     start: -5 * 1000, // -5 sec
     end: 1 * 60 * 1000, // 1 min
     min: -30 * 1000, // -30 sec
     max: 30 * 60 * 1000, // 30 min
+    /** Timeline dimensions */
     minHeight: 300,
+    margin: {
+      axis: 50,
+    },
+    /** Zoom settings */
     zoomMin: 10 * 1000,
     zoomMax: 10 * 60 * 1000,
     zoomFriction: 20,
+    /** Event listeners */
     editable: true,
     onAdd,
+    /** Formatting settings */
     format: {
       minorLabels: (date: Date, scale: string) => {
         // Show negative seconds in pre-pull
