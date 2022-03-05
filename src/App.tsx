@@ -12,24 +12,28 @@ import ActionList from './ActionList';
 import { DatasetItem, GCDItem } from './actionTypes';
 
 function TimelineComponent() {
-  const actionItems = useRef(new DataSet<DatasetItem>());
-  const timelineItems = useRef(new DataSet<DatasetItem>());
+  const actionItems = useRef(new DataSet<GCDItem>());
+  const timelineItems = useRef(new DataSet<TimelineItem>());
 
-  function onAdd(ti: TimelineItem, callback: (item: TimelineItem | null) => void) {
+  function onAdd(ti: DatasetItem, callback: (item: DatasetItem | null) => void) {
     const gcdItem = ti as GCDItem;
+    gcdItem.start = moment(gcdItem.start).toISOString();
 
     // Manually add GCD to actionItems so pipeline can add additional items to timeline
     actionItems.current.add(gcdItem);
     callback(null);
   }
 
-  function onMoving(ti: TimelineItem, callback: (item: TimelineItem | null) => void) {
+  function onMoving(ti: DatasetItem, callback: (item: DatasetItem | null) => void) {
     const gcdItem = ti as GCDItem;
     const actionItem = actionItems.current.get(gcdItem.id);
-    if (moment(gcdItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
+    // console.log('onMoving');
+    // console.log(gcdItem.start);
+    // console.log(actionItem?.start);
+    if (moment(gcdItem.start, true).valueOf() !== moment(actionItem?.start, true).valueOf()) {
       actionItems.current.updateOnly({
         id: gcdItem.id,
-        start: moment(gcdItem.start).toString(),
+        start: moment(gcdItem.start).toISOString(),
       });
     }
     callback(null);
@@ -39,15 +43,17 @@ function TimelineComponent() {
     .map((item) => item)
     .flatMap((gcdItem) => {
       console.log('start of pipeline');
-      console.log(`start: ${moment(gcdItem.start)}`);
-      console.log(`start: ${moment(gcdItem.nextGCD)}`);
       const gcdBackgroundItem: DatasetItem = {
         id: `${gcdItem.id}-gcdBackground`,
         content: '',
-        start: moment(gcdItem.start).toString(),
-        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toString(),
+        start: moment.utc(gcdItem.start, true).valueOf(),
+        end: moment.utc(gcdItem.start, true).add(gcdItem.nextGCD, 'seconds').valueOf(),
         type: 'background',
       };
+      console.log(`original start: ${gcdItem.start}`);
+      console.log(`type of original start: ${gcdItem.start instanceof Date}`);
+      console.log(`start: ${gcdBackgroundItem.start}`);
+      console.log(`end: ${gcdBackgroundItem.end}`);
       console.log('end of pipeline');
       return [gcdItem, gcdBackgroundItem];
     })
@@ -97,7 +103,7 @@ function TimelineComponent() {
         return '';
       },
     },
-    moment: (date: moment.MomentInput) => moment(date).utc(),
+    moment: (date: moment.MomentInput) => moment.utc(date),
   });
 
   const timelineDivRef = useRef<HTMLDivElement>(null);
