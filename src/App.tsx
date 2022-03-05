@@ -23,16 +23,32 @@ function TimelineComponent() {
     callback(null);
   }
 
+  function onMoving(ti: TimelineItem, callback: (item: TimelineItem | null) => void) {
+    const gcdItem = ti as GCDItem;
+    const actionItem = actionItems.current.get(gcdItem.id);
+    if (moment(gcdItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
+      actionItems.current.updateOnly({
+        id: gcdItem.id,
+        start: moment(gcdItem.start).toString(),
+      });
+    }
+    callback(null);
+  }
+
   const actionToTimelinePipe = createNewDataPipeFrom(actionItems.current)
     .map((item) => item)
     .flatMap((gcdItem) => {
+      console.log('start of pipeline');
+      console.log(`start: ${moment(gcdItem.start)}`);
+      console.log(`start: ${moment(gcdItem.nextGCD)}`);
       const gcdBackgroundItem: DatasetItem = {
         id: `${gcdItem.id}-gcdBackground`,
         content: '',
-        start: gcdItem.start,
-        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toDate(),
+        start: moment(gcdItem.start).toString(),
+        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toString(),
         type: 'background',
       };
+      console.log('end of pipeline');
       return [gcdItem, gcdBackgroundItem];
     })
     .to(timelineItems.current);
@@ -57,6 +73,7 @@ function TimelineComponent() {
     /** Event listeners */
     editable: true,
     onAdd,
+    onMoving,
     /** Formatting settings */
     format: {
       minorLabels: (date: Date, scale: string) => {
@@ -91,7 +108,7 @@ function TimelineComponent() {
         timelineDivRef.current &&
         new Timeline(timelineDivRef.current, timelineItems.current, options.current);
     }
-  }, [timelineDivRef, timelineItems, options]);
+  });
 
   return <div id="visualization" ref={timelineDivRef} />;
 }
