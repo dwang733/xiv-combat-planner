@@ -3,7 +3,7 @@ import './App.css';
 
 import React, { useEffect, useRef } from 'react';
 
-import { DataSet } from 'vis-data/peer';
+import { createNewDataPipeFrom, DataSet } from 'vis-data/peer';
 import { Timeline, TimelineItem, TimelineOptions } from 'vis-timeline/peer';
 import moment from 'moment/moment';
 
@@ -12,23 +12,31 @@ import ActionList from './ActionList';
 import { DatasetItem, GCDItem } from './actionTypes';
 
 function TimelineComponent() {
-  const items = useRef(new DataSet<DatasetItem>());
+  const actionItems = useRef(new DataSet<DatasetItem>());
+  const timelineItems = useRef(new DataSet<DatasetItem>());
 
   function onAdd(ti: TimelineItem, callback: (item: TimelineItem | null) => void) {
     const gcdItem = ti as GCDItem;
-    console.log(gcdItem);
 
-    const gcdBackgroundItem: DatasetItem = {
-      id: `${gcdItem.id}-gcdBackground`,
-      content: '',
-      start: gcdItem.start,
-      end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toDate(),
-      type: 'background',
-    };
-    items.current.add(gcdBackgroundItem);
-
-    callback(ti);
+    // Manually add GCD to actionItems so pipeline can add additional items to timeline
+    actionItems.current.add(gcdItem);
+    callback(null);
   }
+
+  const actionToTimelinePipe = createNewDataPipeFrom(actionItems.current)
+    .map((item) => item)
+    .flatMap((gcdItem) => {
+      const gcdBackgroundItem: DatasetItem = {
+        id: `${gcdItem.id}-gcdBackground`,
+        content: '',
+        start: gcdItem.start,
+        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toDate(),
+        type: 'background',
+      };
+      return [gcdItem, gcdBackgroundItem];
+    })
+    .to(timelineItems.current);
+  actionToTimelinePipe.all().start();
 
   // Configuration for the Timeline
   const options = useRef<TimelineOptions>({
@@ -81,9 +89,9 @@ function TimelineComponent() {
     if (timeline.current == null) {
       timeline.current =
         timelineDivRef.current &&
-        new Timeline(timelineDivRef.current, items.current, options.current);
+        new Timeline(timelineDivRef.current, timelineItems.current, options.current);
     }
-  }, [timelineDivRef, items, options]);
+  }, [timelineDivRef, timelineItems, options]);
 
   return <div id="visualization" ref={timelineDivRef} />;
 }

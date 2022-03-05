@@ -8,7 +8,7 @@ function ActionListItem(props: { action: GCD }) {
   const iconPath = `./${action.job.toLowerCase()}/${action.name}.png`;
   const iconImageElement = <img src={iconPath} alt={action.name} />;
 
-  function handleDragStart(eventArg: React.DragEvent<HTMLLIElement>) {
+  function handleDragStart(eventArg: React.DragEvent<HTMLElement>) {
     const event = eventArg;
     event.dataTransfer.effectAllowed = 'move';
     const item: Partial<GCDItem> = {
