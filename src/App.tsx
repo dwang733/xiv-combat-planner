@@ -39,6 +39,12 @@ function TimelineComponent() {
     callback(null);
   }
 
+  function onRemove(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
+    const gcdItem = ti as GCDItem;
+    actionItems.current.remove(gcdItem.id);
+    callback(null);
+  }
+
   const actionToTimelinePipe = createNewDataPipeFrom(actionItems.current)
     .map((item) => item)
     .flatMap((gcdItem) => {
@@ -78,6 +84,7 @@ function TimelineComponent() {
     editable: true,
     onAdd,
     onMoving,
+    onRemove,
     /** Formatting settings */
     format: {
       minorLabels: (date: Date, scale: string) => {
