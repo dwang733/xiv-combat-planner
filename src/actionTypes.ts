@@ -28,7 +28,7 @@ export class GCD {
 }
 
 export type GCDItem = TimelineItem & GCD;
-export type DatasetItem = TimelineItem & Partial<GCD>;
+export type GCDItemPartial = TimelineItem & Partial<GCD>;
 
 export interface Job {
   name: string;

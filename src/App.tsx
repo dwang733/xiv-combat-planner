@@ -4,18 +4,18 @@ import './App.css';
 import React, { useEffect, useRef } from 'react';
 
 import { createNewDataPipeFrom, DataSet } from 'vis-data/peer';
-import { Timeline, TimelineItem, TimelineOptions } from 'vis-timeline/peer';
+import { Timeline, TimelineOptions } from 'vis-timeline/peer';
 import moment from 'moment/moment';
 
 import Summoner from './jobs/summoner';
 import ActionList from './ActionList';
-import { DatasetItem, GCDItem } from './actionTypes';
+import { GCDItemPartial, GCDItem } from './actionTypes';
 
 function TimelineComponent() {
   const actionItems = useRef(new DataSet<GCDItem>());
-  const timelineItems = useRef(new DataSet<TimelineItem>());
+  const timelineItems = useRef(new DataSet<GCDItemPartial>());
 
-  function onAdd(ti: DatasetItem, callback: (item: DatasetItem | null) => void) {
+  function onAdd(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
     const gcdItem = ti as GCDItem;
     gcdItem.start = moment(gcdItem.start).toISOString();
 
@@ -24,13 +24,13 @@ function TimelineComponent() {
     callback(null);
   }
 
-  function onMoving(ti: DatasetItem, callback: (item: DatasetItem | null) => void) {
+  function onMoving(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
     const gcdItem = ti as GCDItem;
     const actionItem = actionItems.current.get(gcdItem.id);
     // console.log('onMoving');
     // console.log(gcdItem.start);
     // console.log(actionItem?.start);
-    if (moment(gcdItem.start, true).valueOf() !== moment(actionItem?.start, true).valueOf()) {
+    if (moment(gcdItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
       actionItems.current.updateOnly({
         id: gcdItem.id,
         start: moment(gcdItem.start).toISOString(),
@@ -42,19 +42,17 @@ function TimelineComponent() {
   const actionToTimelinePipe = createNewDataPipeFrom(actionItems.current)
     .map((item) => item)
     .flatMap((gcdItem) => {
-      console.log('start of pipeline');
-      const gcdBackgroundItem: DatasetItem = {
+      // console.log('start of pipeline');
+      const gcdBackgroundItem: GCDItemPartial = {
         id: `${gcdItem.id}-gcdBackground`,
         content: '',
-        start: moment.utc(gcdItem.start, true).valueOf(),
-        end: moment.utc(gcdItem.start, true).add(gcdItem.nextGCD, 'seconds').valueOf(),
+        start: moment(gcdItem.start).toISOString(),
+        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
         type: 'background',
       };
-      console.log(`original start: ${gcdItem.start}`);
-      console.log(`type of original start: ${gcdItem.start instanceof Date}`);
-      console.log(`start: ${gcdBackgroundItem.start}`);
-      console.log(`end: ${gcdBackgroundItem.end}`);
-      console.log('end of pipeline');
+      // console.log(gcdItem);
+      // console.log(`start: ${gcdBackgroundItem.start}`);
+      // console.log('end of pipeline');
       return [gcdItem, gcdBackgroundItem];
     })
     .to(timelineItems.current);
