@@ -14,6 +14,7 @@ import { GCDItemPartial, GCDItem } from './actionTypes';
 function TimelineComponent() {
   const actionItems = useRef(new DataSet<GCDItem>());
   const timelineItems = useRef(new DataSet<GCDItemPartial>());
+  let isInDrag = false;
 
   function onAdd(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
     const gcdItem = ti as GCDItem;
@@ -27,9 +28,6 @@ function TimelineComponent() {
   function onMoving(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
     const gcdItem = ti as GCDItem;
     const actionItem = actionItems.current.get(gcdItem.id);
-    // console.log('onMoving');
-    // console.log(gcdItem.start);
-    // console.log(actionItem?.start);
     if (moment(gcdItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
       actionItems.current.updateOnly({
         id: gcdItem.id,
@@ -46,9 +44,8 @@ function TimelineComponent() {
   }
 
   const actionToTimelinePipe = createNewDataPipeFrom(actionItems.current)
-    .map((item) => item)
+    // .map((item) => item)
     .flatMap((gcdItem) => {
-      // console.log('start of pipeline');
       const gcdBackgroundItem: GCDItemPartial = {
         id: `${gcdItem.id}-gcdBackground`,
         content: '',
@@ -56,9 +53,6 @@ function TimelineComponent() {
         end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
         type: 'background',
       };
-      // console.log(gcdItem);
-      // console.log(`start: ${gcdBackgroundItem.start}`);
-      // console.log('end of pipeline');
       return [gcdItem, gcdBackgroundItem];
     })
     .to(timelineItems.current);
@@ -121,7 +115,60 @@ function TimelineComponent() {
     }
   });
 
-  return <div id="visualization" ref={timelineDivRef} />;
+  function getAddedItemStart(event: React.DragEvent<HTMLElement>) {
+    const timeWindow = timeline.current!.getWindow();
+    const width = timelineDivRef.current!.offsetWidth;
+    const x = event.clientX;
+
+    // Get new item start based on timeline window start and cursor Y pos
+    const timeDiff = moment(timeWindow.end).unix() - moment(timeWindow.start).unix();
+    const secondsSinceTimeWindowStart = (timeDiff * x) / width;
+    const itemStart = moment(timeWindow.start)
+      .add(secondsSinceTimeWindowStart, 'seconds')
+      .toISOString();
+    return itemStart;
+  }
+
+  function onDragEnter(event: React.DragEvent<HTMLElement>) {
+    if (isInDrag) {
+      return;
+    }
+
+    event.preventDefault();
+    isInDrag = true;
+
+    const itemStart = getAddedItemStart(event);
+    timelineItems.current!.add({
+      id: 'addDragItem',
+      start: itemStart,
+      content: 'add drag item',
+    });
+  }
+
+  function onDragOver(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+
+    const itemStart = getAddedItemStart(event);
+    timelineItems.current!.updateOnly({
+      id: 'addDragItem',
+      start: itemStart,
+    });
+  }
+
+  function onDrop(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+    isInDrag = false;
+  }
+
+  return (
+    <div
+      id="visualization"
+      ref={timelineDivRef}
+      onDragEnter={onDragEnter}
+      onDragOver={onDragOver}
+      onDrop={onDrop}
+    />
+  );
 }
 
 function App() {
