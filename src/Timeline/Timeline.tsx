@@ -7,8 +7,8 @@ import moment from 'moment/moment';
 import { GCDItemPartial, GCDItem } from '../actionTypes';
 
 export default function TimelineComponent() {
-  const actionItems = useRef(new DataSet<GCDItem>());
-  const timelineItems = useRef(new DataSet<GCDItemPartial>());
+  const actionItems = new DataSet<GCDItem>();
+  const timelineItems = new DataSet<GCDItemPartial>();
   let isInDrag = false;
 
   const timelineDivRef = useRef<HTMLDivElement>(null);
@@ -19,16 +19,15 @@ export default function TimelineComponent() {
     gcdItem.start = moment(gcdItem.start).toISOString();
 
     // Manually add GCD to actionItems so pipeline can add additional items to timeline
-    actionItems.current.add(gcdItem);
+    actionItems.add(gcdItem);
     callback(null);
   }
 
   function onMoving(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
     const gcdItem = ti as GCDItem;
-    const actionItem = actionItems.current.get(gcdItem.id);
+    const actionItem = actionItems.get(gcdItem.id);
     if (moment(gcdItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
-      console.log('moving item');
-      actionItems.current.updateOnly({
+      actionItems.updateOnly({
         id: gcdItem.id,
         start: moment(gcdItem.start).toISOString(),
       });
@@ -38,11 +37,11 @@ export default function TimelineComponent() {
 
   function onRemove(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
     const gcdItem = ti as GCDItem;
-    actionItems.current.remove(gcdItem.id);
+    actionItems.remove(gcdItem.id);
     callback(null);
   }
 
-  const actionToTimelinePipe = createNewDataPipeFrom(actionItems.current)
+  const actionToTimelinePipe = createNewDataPipeFrom(actionItems)
     // .map((item) => item)
     .flatMap((gcdItem) => {
       const gcdBackgroundItem: GCDItemPartial = {
@@ -54,11 +53,11 @@ export default function TimelineComponent() {
       };
       return [gcdItem, gcdBackgroundItem];
     })
-    .to(timelineItems.current);
+    .to(timelineItems);
   actionToTimelinePipe.all().start();
 
   // Configuration for the Timeline
-  const options = useRef<TimelineOptions>({
+  const options: TimelineOptions = {
     /** Horizontal axis time settings */
     start: -5 * 1000, // -5 sec
     end: 1 * 60 * 1000, // 1 min
@@ -102,12 +101,11 @@ export default function TimelineComponent() {
       },
     },
     moment: (date: moment.MomentInput) => moment.utc(date),
-  });
+  };
   useEffect(() => {
     if (timeline.current == null) {
       timeline.current =
-        timelineDivRef.current &&
-        new Timeline(timelineDivRef.current, timelineItems.current, options.current);
+        timelineDivRef.current && new Timeline(timelineDivRef.current, timelineItems, options);
     }
   });
 
@@ -118,7 +116,7 @@ export default function TimelineComponent() {
 
     // Get new item start based on timeline window start and cursor Y pos
     const timeDiff = moment(timeWindow.end).unix() - moment(timeWindow.start).unix();
-    const secondsSinceTimeWindowStart = (timeDiff * x) / width;
+    const secondsSinceTimeWindowStart = timeDiff * (x / width);
     const itemStart = moment(timeWindow.start)
       .add(secondsSinceTimeWindowStart, 'seconds')
       .toISOString();
@@ -134,7 +132,7 @@ export default function TimelineComponent() {
     isInDrag = true;
 
     const itemStart = getAddedItemStart(event);
-    timelineItems.current!.add({
+    timelineItems.add({
       id: 'addDragItem',
       start: itemStart,
       content: 'add drag item',
@@ -145,7 +143,7 @@ export default function TimelineComponent() {
     event.preventDefault();
 
     const itemStart = getAddedItemStart(event);
-    timelineItems.current!.updateOnly({
+    timelineItems.updateOnly({
       id: 'addDragItem',
       start: itemStart,
     });
@@ -165,6 +163,4 @@ export default function TimelineComponent() {
       onDrop={onDrop}
     />
   );
-
-  return <div id="visualization" ref={timelineDivRef} />;
 }
