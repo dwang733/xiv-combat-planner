@@ -80,7 +80,7 @@ export default function TimelineComponent() {
     /** Formatting settings */
     snap: (date) => {
       const dateInMs = moment(date).valueOf();
-      console.log(`dateInMs: ${dateInMs}`);
+      // console.log(`dateInMs: ${dateInMs}`);
       const sortedActionItems = actionItems.get({
         order: 'start',
       });
@@ -93,20 +93,20 @@ export default function TimelineComponent() {
             const itemCastEndInMs = itemStartInMs + item.castTime * 1000;
             itemSnapPoints.push(itemCastEndInMs);
           }
-          console.log('item snap points');
-          console.log(itemSnapPoints);
+          // console.log('item snap points');
+          // console.log(itemSnapPoints);
           return itemSnapPoints;
         })
         .filter((snapPointInMs) => snapPointInMs < dateInMs);
-      console.log('snap points before sort:');
-      console.log(snapPoints);
+      // console.log('snap points before sort:');
+      // console.log(snapPoints);
       snapPoints.sort((snapPointAInMs, snapPointBInMs) => snapPointBInMs - snapPointAInMs);
 
-      console.log('snap points after sort:');
-      console.log(snapPoints);
+      // console.log('snap points after sort:');
+      // console.log(snapPoints);
       const closestTime = snapPoints.length > 0 ? moment(snapPoints[0]).toDate() : 0;
-      console.log(sortedActionItems.map((i) => i.start));
-      console.log(`snap closest time: ${closestTime}`);
+      // console.log(sortedActionItems.map((i) => i.start));
+      // console.log(`snap closest time: ${closestTime}`);
       return closestTime;
     },
     format: {
@@ -167,6 +167,7 @@ export default function TimelineComponent() {
       id: 'addDragItem',
       start: itemStart,
       content: 'add drag item',
+      type: 'point',
     });
   }
 
@@ -183,15 +184,16 @@ export default function TimelineComponent() {
   function onDrop(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
     isInDrag = false;
+    timelineItems.remove('addDragItem');
   }
 
   return (
     <div
       id="visualization"
       ref={timelineDivRef}
-      onDragEnter={onDragEnter}
-      onDragOver={onDragOver}
-      onDrop={onDrop}
+      onDragEnterCapture={onDragEnter}
+      onDragOverCapture={onDragOver}
+      onDropCapture={onDrop}
     />
   );
 }
