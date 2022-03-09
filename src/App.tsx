@@ -3,7 +3,7 @@ import './App.css';
 
 import React from 'react';
 
-import TimelineComponent from './Timeline/Timeline';
+import TimelineComponent from './Timeline';
 import ActionList from './ActionList';
 import Summoner from './jobs/summoner';
 
