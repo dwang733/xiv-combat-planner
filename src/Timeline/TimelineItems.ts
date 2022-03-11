@@ -1,5 +1,6 @@
-import moment from 'moment';
 import React, { RefObject } from 'react';
+
+import moment from 'moment';
 import { DataSet } from 'vis-data/peer';
 import { Timeline, TimelineItem } from 'vis-timeline/peer';
 

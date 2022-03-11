@@ -1,37 +1,29 @@
 import React, { useEffect, useRef } from 'react';
 
-import { createNewDataPipeFrom, DataSet } from 'vis-data/peer';
-import { Timeline, TimelineOptions } from 'vis-timeline/peer';
 import moment from 'moment/moment';
+import { createNewDataPipeFrom } from 'vis-data/peer';
+import { Timeline, TimelineOptions } from 'vis-timeline/peer';
 
 import { ActionItemPartial, ActionItem } from '../actionTypes';
 import TimelineItems from './TimelineItems';
+import ActionItems from './ActionItems';
 
 export default function TimelineComponent() {
   const timelineDivRef = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
 
-  const actionItems = new DataSet<ActionItem>();
+  const actionItems = new ActionItems(timeline);
   const timelineItems = new TimelineItems(timelineDivRef, timeline);
 
   function onAdd(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const gcdItem = ti as ActionItem;
-    gcdItem.start = moment(gcdItem.start).toISOString();
-
-    // Manually add GCD to actionItems so pipeline can add additional items to timeline
-    actionItems.add(gcdItem);
+    const actionItem = ti as ActionItem;
+    actionItems.add(actionItem);
     callback(null);
   }
 
   function onMoving(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const gcdItem = ti as ActionItem;
-    const actionItem = actionItems.get(gcdItem.id);
-    if (moment(gcdItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
-      actionItems.updateOnly({
-        id: gcdItem.id,
-        start: moment(gcdItem.start).toISOString(),
-      });
-    }
+    const actionItem = ti as ActionItem;
+    actionItems.updateOnly(actionItem);
     callback(null);
   }
 
@@ -133,6 +125,7 @@ export default function TimelineComponent() {
     },
     moment: (date: moment.MomentInput) => moment.utc(date),
   };
+
   useEffect(() => {
     if (timeline.current == null) {
       timeline.current =
