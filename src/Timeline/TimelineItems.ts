@@ -7,6 +7,7 @@ import { Timeline, TimelineItem } from 'vis-timeline/peer';
 export default class TimelineItems extends DataSet<TimelineItem> {
   private readonly CURSOR_ID = 'cursor';
   private cursorItem: TimelineItem | null = null;
+  private childrenEntered = new Set<EventTarget>();
 
   constructor(
     private timelineDivRef: RefObject<HTMLDivElement>,
@@ -21,6 +22,9 @@ export default class TimelineItems extends DataSet<TimelineItem> {
    */
   addCursor = (event: React.DragEvent<HTMLElement>): void => {
     event.preventDefault();
+
+    // Keep track of all drag enter events, including children.
+    this.childrenEntered.add(event.target);
     if (this.cursorItem != null) {
       return;
     }
@@ -53,13 +57,26 @@ export default class TimelineItems extends DataSet<TimelineItem> {
   };
 
   /**
-   * Remove the cursor on the timeline.
+   * Remove the cursor on the timeline if needed.
    * @param event The drag event that triggered removing the cursor.
+   * @param forceRemove true if cursor should be forcibly removed, regardless of children.
    */
-  removeCursor = (event: React.DragEvent<HTMLElement>): void => {
+  removeCursor = (event: React.DragEvent<HTMLElement>, forceRemove: boolean): void => {
     event.preventDefault();
-    this.cursorItem = null;
-    this.remove(this.CURSOR_ID);
+
+    setTimeout(() => {
+      // Remove drag enter event from set
+      this.childrenEntered.delete(event.target);
+      if (forceRemove) {
+        this.childrenEntered.clear();
+      }
+
+      // Only remove cursor if exited all children or drop event triggered
+      if (this.childrenEntered.size === 0) {
+        this.cursorItem = null;
+        this.remove(this.CURSOR_ID);
+      }
+    }, 1);
   };
 
   /**

@@ -139,7 +139,8 @@ export default function TimelineComponent() {
       ref={timelineDivRef}
       onDragEnterCapture={timelineItems.addCursor}
       onDragOverCapture={timelineItems.moveCursor}
-      onDropCapture={timelineItems.removeCursor}
+      onDragLeaveCapture={(e) => timelineItems.removeCursor(e, false)}
+      onDropCapture={(e) => timelineItems.removeCursor(e, true)}
     />
   );
 }
