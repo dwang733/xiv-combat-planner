@@ -14,6 +14,10 @@ export default class TimelineItems extends DataSet<TimelineItem> {
     super();
   }
 
+  /**
+   * Add the cursor to the timeline.
+   * @param event The drag event that triggered adding the cursor.
+   */
   addCursor = (event: React.DragEvent<HTMLElement>): void => {
     event.preventDefault();
     if (this.cursorItem != null) {
@@ -32,6 +36,10 @@ export default class TimelineItems extends DataSet<TimelineItem> {
     this.add(this.cursorItem);
   };
 
+  /**
+   * Move the cursor on the timeline.
+   * @param event The drag event that triggered moving the cursor.
+   */
   moveCursor = (event: React.DragEvent<HTMLElement>): void => {
     event.preventDefault();
 
@@ -43,12 +51,21 @@ export default class TimelineItems extends DataSet<TimelineItem> {
     });
   };
 
+  /**
+   * Remove the cursor on the timeline.
+   * @param event The drag event that triggered removing the cursor.
+   */
   removeCursor = (event: React.DragEvent<HTMLElement>): void => {
     event.preventDefault();
     this.cursorItem = null;
     this.remove(this.CURSOR_ID);
   };
 
+  /**
+   * Get the item's start time based on the cursor's relative position to the timeline.
+   * @param event The event that triggered the cursor start calculation.
+   * @returns The item's start as an ISO string.
+   */
   private getAddedItemStart(event: React.DragEvent<HTMLElement>) {
     const timeWindow = this.timeline.current!.getWindow();
     const timeStart = moment(timeWindow.start);
