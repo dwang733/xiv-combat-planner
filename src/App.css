@@ -47,3 +47,9 @@ li.item {
   margin-bottom: 5px;
   padding: 5px 12px;
 }
+
+.vis-item.timeline-cursor {
+  /* Set cursor css here */
+  border: none;
+  background-color: black;
+}

@@ -1,9 +1,9 @@
-import { GCD, Job } from '../actionTypes';
+import { Action, Job } from '../actionTypes';
 
 const name = 'Summoner';
 const abbr = 'SMN';
 
-const baseActions: Omit<GCD, 'job'>[] = [
+const baseActions: Omit<Action, 'job'>[] = [
   {
     name: 'Summon Bahamut',
     potency: 0,
@@ -21,7 +21,7 @@ const baseActions: Omit<GCD, 'job'>[] = [
     mpCost: 0,
   },
 ];
-const actions: GCD[] = baseActions.map((a) => ({ ...a, job: abbr }));
+const actions: Action[] = baseActions.map((a) => ({ ...a, job: abbr }));
 
 export default class Summoner implements Job {
   name = name;

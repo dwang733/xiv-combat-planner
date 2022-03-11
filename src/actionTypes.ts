@@ -1,9 +1,9 @@
 import { TimelineItem } from 'vis-timeline/peer';
 
 /**
- * Implements a GCD action.
+ * Implements a action.
  */
-export class GCD {
+export class Action {
   /**
    *
    * @param job The job that uses this action.
@@ -27,11 +27,11 @@ export class GCD {
   ) {}
 }
 
-export type GCDItem = TimelineItem & GCD;
-export type GCDItemPartial = TimelineItem & Partial<GCD>;
+export type ActionItem = TimelineItem & Action;
+export type ActionItemPartial = TimelineItem & Partial<Action>;
 
 export interface Job {
   name: string;
   abbr: string;
-  actions: GCD[];
+  actions: Action[];
 }

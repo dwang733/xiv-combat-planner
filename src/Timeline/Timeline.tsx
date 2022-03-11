@@ -4,18 +4,18 @@ import { createNewDataPipeFrom, DataSet } from 'vis-data/peer';
 import { Timeline, TimelineOptions } from 'vis-timeline/peer';
 import moment from 'moment/moment';
 
-import { GCDItemPartial, GCDItem } from '../actionTypes';
+import { ActionItemPartial, ActionItem } from '../actionTypes';
+import TimelineItems from './TimelineItems';
 
 export default function TimelineComponent() {
-  const actionItems = new DataSet<GCDItem>();
-  const timelineItems = new DataSet<GCDItemPartial>();
-  let isInDrag = false;
-
   const timelineDivRef = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
 
-  function onAdd(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
-    const gcdItem = ti as GCDItem;
+  const actionItems = new DataSet<ActionItem>();
+  const timelineItems = new TimelineItems(timelineDivRef, timeline);
+
+  function onAdd(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const gcdItem = ti as ActionItem;
     gcdItem.start = moment(gcdItem.start).toISOString();
 
     // Manually add GCD to actionItems so pipeline can add additional items to timeline
@@ -23,8 +23,8 @@ export default function TimelineComponent() {
     callback(null);
   }
 
-  function onMoving(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
-    const gcdItem = ti as GCDItem;
+  function onMoving(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const gcdItem = ti as ActionItem;
     const actionItem = actionItems.get(gcdItem.id);
     if (moment(gcdItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
       actionItems.updateOnly({
@@ -35,8 +35,8 @@ export default function TimelineComponent() {
     callback(null);
   }
 
-  function onRemove(ti: GCDItemPartial, callback: (item: GCDItemPartial | null) => void) {
-    const gcdItem = ti as GCDItem;
+  function onRemove(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const gcdItem = ti as ActionItem;
     actionItems.remove(gcdItem.id);
     callback(null);
   }
@@ -44,7 +44,7 @@ export default function TimelineComponent() {
   const actionToTimelinePipe = createNewDataPipeFrom(actionItems)
     // .map((item) => item)
     .flatMap((gcdItem) => {
-      const gcdBackgroundItem: GCDItemPartial = {
+      const gcdBackgroundItem: ActionItemPartial = {
         id: `${gcdItem.id}-gcdBackground`,
         content: '',
         start: moment(gcdItem.start).toISOString(),
@@ -140,60 +140,13 @@ export default function TimelineComponent() {
     }
   });
 
-  function getAddedItemStart(event: React.DragEvent<HTMLElement>) {
-    const timeWindow = timeline.current!.getWindow();
-    const width = timelineDivRef.current!.offsetWidth;
-    const x = event.clientX;
-
-    // Get new item start based on timeline window start and cursor Y pos
-    const timeDiff = moment(timeWindow.end).unix() - moment(timeWindow.start).unix();
-    const secondsSinceTimeWindowStart = timeDiff * (x / width);
-    const itemStart = moment(timeWindow.start)
-      .add(secondsSinceTimeWindowStart, 'seconds')
-      .toISOString();
-    return itemStart;
-  }
-
-  function onDragEnter(event: React.DragEvent<HTMLElement>) {
-    if (isInDrag) {
-      return;
-    }
-
-    event.preventDefault();
-    isInDrag = true;
-
-    const itemStart = getAddedItemStart(event);
-    timelineItems.add({
-      id: 'addDragItem',
-      start: itemStart,
-      content: 'add drag item',
-      type: 'point',
-    });
-  }
-
-  function onDragOver(event: React.DragEvent<HTMLElement>) {
-    event.preventDefault();
-
-    const itemStart = getAddedItemStart(event);
-    timelineItems.updateOnly({
-      id: 'addDragItem',
-      start: itemStart,
-    });
-  }
-
-  function onDrop(event: React.DragEvent<HTMLElement>) {
-    event.preventDefault();
-    isInDrag = false;
-    timelineItems.remove('addDragItem');
-  }
-
   return (
     <div
       id="visualization"
       ref={timelineDivRef}
-      onDragEnterCapture={onDragEnter}
-      onDragOverCapture={onDragOver}
-      onDropCapture={onDrop}
+      onDragEnterCapture={timelineItems.addCursor}
+      onDragOverCapture={timelineItems.moveCursor}
+      onDropCapture={timelineItems.removeCursor}
     />
   );
 }
