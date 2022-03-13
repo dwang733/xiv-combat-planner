@@ -29,7 +29,7 @@ export default function TimelineComponent() {
 
   function onRemove(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
     const gcdItem = ti as ActionItem;
-    actionItems.remove(gcdItem.id);
+    actionItems.remove(gcdItem);
     callback(null);
   }
 

@@ -41,6 +41,7 @@ export default class ActionItems extends DataSet<ActionItem> {
    */
   updateOnly(itemArg: ActionItem): (string | number)[] {
     const updateItem = itemArg;
+
     const actionItem = this.get(updateItem.id);
     if (moment(updateItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
       super.updateOnly({
@@ -50,5 +51,9 @@ export default class ActionItems extends DataSet<ActionItem> {
     }
 
     return [];
+  }
+
+  remove(itemArg: ActionItem): (string | number)[] {
+    return super.remove(itemArg);
   }
 }
