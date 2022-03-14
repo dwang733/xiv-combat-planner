@@ -3,6 +3,7 @@ import React, { RefObject } from 'react';
 import moment from 'moment';
 import { DataSet } from 'vis-data/peer';
 import { Timeline, TimelineItem } from 'vis-timeline/peer';
+import ActionItems from './ActionItems';
 
 export default class TimelineItems extends DataSet<TimelineItem> {
   private readonly CURSOR_ID = 'cursor';
@@ -11,7 +12,8 @@ export default class TimelineItems extends DataSet<TimelineItem> {
 
   constructor(
     private timelineDivRef: RefObject<HTMLDivElement>,
-    private timeline: RefObject<Timeline>
+    private timeline: RefObject<Timeline>,
+    private actionItems: ActionItems
   ) {
     super();
   }
@@ -29,7 +31,7 @@ export default class TimelineItems extends DataSet<TimelineItem> {
       return;
     }
 
-    const start = this.getAddedItemStart(event);
+    const start = this.getCursorTime(event);
     this.cursorItem = {
       id: this.CURSOR_ID,
       start,
@@ -38,6 +40,11 @@ export default class TimelineItems extends DataSet<TimelineItem> {
       className: 'timeline-cursor',
       content: '',
     };
+
+    const snapStart = this.actionItems.getSnapPoint(this.cursorItem);
+    this.cursorItem.start = snapStart;
+    this.cursorItem.end = snapStart;
+
     this.update(this.cursorItem);
   };
 
@@ -48,12 +55,18 @@ export default class TimelineItems extends DataSet<TimelineItem> {
   moveCursor = (event: React.DragEvent<HTMLElement>): void => {
     event.preventDefault();
 
-    const start = this.getAddedItemStart(event);
-    this.update({
+    const start = this.getCursorTime(event);
+    const cursorUpdate = {
       id: this.CURSOR_ID,
       start,
       end: start,
-    });
+    };
+
+    const snapStart = this.actionItems.getSnapPoint(cursorUpdate);
+    cursorUpdate.start = snapStart;
+    cursorUpdate.end = snapStart;
+
+    this.update(cursorUpdate);
   };
 
   /**
@@ -84,7 +97,7 @@ export default class TimelineItems extends DataSet<TimelineItem> {
    * @param event The event that triggered the cursor start calculation.
    * @returns The item's start as an ISO string.
    */
-  private getAddedItemStart(event: React.DragEvent<HTMLElement>) {
+  private getCursorTime(event: React.DragEvent<HTMLElement>) {
     const timeWindow = this.timeline.current!.getWindow();
     const timeStart = moment(timeWindow.start);
     const timeEnd = moment(timeWindow.end);

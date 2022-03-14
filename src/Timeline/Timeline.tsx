@@ -13,7 +13,7 @@ export default function TimelineComponent() {
   const timeline = useRef<Timeline | null>(null);
 
   const actionItems = new ActionItems(timeline);
-  const timelineItems = new TimelineItems(timelineDivRef, timeline);
+  const timelineItems = new TimelineItems(timelineDivRef, timeline, actionItems);
 
   function onAdd(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
     const actionItem = ti as ActionItem;
@@ -70,37 +70,6 @@ export default function TimelineComponent() {
     onMoving,
     onRemove,
     /** Formatting settings */
-    snap: (date) => {
-      const dateInMs = moment(date).valueOf();
-      // console.log(`dateInMs: ${dateInMs}`);
-      const sortedActionItems = actionItems.get({
-        order: 'start',
-      });
-      const snapPoints = sortedActionItems
-        .flatMap((item) => {
-          const itemStartInMs = moment(item.start).valueOf();
-          const itemGCDEndInMs = itemStartInMs + item.nextGCD * 1000;
-          const itemSnapPoints = [itemStartInMs, itemGCDEndInMs];
-          if (item.castTime > 0) {
-            const itemCastEndInMs = itemStartInMs + item.castTime * 1000;
-            itemSnapPoints.push(itemCastEndInMs);
-          }
-          // console.log('item snap points');
-          // console.log(itemSnapPoints);
-          return itemSnapPoints;
-        })
-        .filter((snapPointInMs) => snapPointInMs < dateInMs);
-      // console.log('snap points before sort:');
-      // console.log(snapPoints);
-      snapPoints.sort((snapPointAInMs, snapPointBInMs) => snapPointBInMs - snapPointAInMs);
-
-      // console.log('snap points after sort:');
-      // console.log(snapPoints);
-      const closestTime = snapPoints.length > 0 ? moment(snapPoints[0]).toDate() : 0;
-      // console.log(sortedActionItems.map((i) => i.start));
-      // console.log(`snap closest time: ${closestTime}`);
-      return closestTime;
-    },
     format: {
       minorLabels: (date, scale) => {
         // Show negative seconds in pre-pull

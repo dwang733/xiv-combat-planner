@@ -2,11 +2,13 @@ import { RefObject } from 'react';
 
 import moment from 'moment';
 import { DataSet } from 'vis-data/peer';
-import { Timeline } from 'vis-timeline';
+import { Timeline, TimelineItem } from 'vis-timeline';
 
 import { ActionItem } from '../actionTypes';
 
 export default class ActionItems extends DataSet<ActionItem> {
+  private ANIMATION_LOCK_IN_MS = 500;
+
   constructor(private timeline: RefObject<Timeline>) {
     super();
   }
@@ -19,8 +21,9 @@ export default class ActionItems extends DataSet<ActionItem> {
   add(itemArg: ActionItem): (string | number)[] {
     const addItem = itemArg;
 
-    // Convert any DateType to string to ensure safety
-    addItem.start = moment(addItem.start).toISOString();
+    const snapStart = this.getSnapPoint(addItem);
+    addItem.start = snapStart;
+
     return super.add(addItem);
   }
 
@@ -44,16 +47,69 @@ export default class ActionItems extends DataSet<ActionItem> {
 
     const actionItem = this.get(updateItem.id);
     if (moment(updateItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
+      const snapPoint = this.getSnapPoint(updateItem);
       super.updateOnly({
         id: updateItem.id,
-        start: moment(updateItem.start).toISOString(),
+        start: snapPoint,
       });
     }
 
     return [];
   }
 
+  /**
+   * Remove an item by reference.
+   * The method ignores removal of non-existing items,
+   * and returns an array containing the ids of the items which are actually removed from the DataSet.
+   * @param itemArg The action item to remove.
+   * @returns The ids of the removed items.
+   */
   remove(itemArg: ActionItem): (string | number)[] {
     return super.remove(itemArg);
+  }
+
+  /**
+   * Gets the given timeline item's start to the closest snap point of the existing actions.
+   * @param itemArg The action to snap to a time.
+   * @returns The closest snap point to the given item as an ISO string.
+   */
+  getSnapPoint(itemArg: Pick<TimelineItem, 'id' | 'start'>): string {
+    const itemToSnap = itemArg;
+    if (this.length === 0) {
+      return moment(0).toISOString();
+    }
+
+    const startInMs = moment(itemToSnap.start).valueOf();
+    const itemsArray = this.get();
+
+    const snapPoints = itemsArray.flatMap((item) => {
+      // Don't allow item to snap to itself
+      if (item.id === itemToSnap.id) {
+        return [];
+      }
+
+      const itemStartInMs = moment(item.start).valueOf();
+      const itemSnapPoints = [itemStartInMs];
+      if (item.nextGCD > 0) {
+        // Add snap points for GCD
+        const itemGCDEndInMs = itemStartInMs + item.nextGCD * 1000;
+        itemSnapPoints.push(itemGCDEndInMs);
+        if (item.castTime > 0) {
+          const itemCastEndInMs = itemStartInMs + item.castTime * 1000;
+          itemSnapPoints.push(itemCastEndInMs);
+        }
+      } else {
+        // Add snap points for oGCD
+        const itemLockEndInMs = itemStartInMs + this.ANIMATION_LOCK_IN_MS;
+        itemSnapPoints.push(itemLockEndInMs);
+      }
+      return itemSnapPoints;
+    });
+    // Sort according to how close snap point is to item
+    snapPoints.sort(
+      (snapPointAInMs, snapPointBInMs) =>
+        Math.abs(snapPointAInMs - startInMs) - Math.abs(snapPointBInMs - startInMs)
+    );
+    return moment(snapPoints[0]).toISOString();
   }
 }
