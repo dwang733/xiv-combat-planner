@@ -38,7 +38,7 @@ export default class TimelineItems extends DataSet<TimelineItem> {
       className: 'timeline-cursor',
       content: '',
     };
-    this.add(this.cursorItem);
+    this.update(this.cursorItem);
   };
 
   /**
@@ -49,7 +49,7 @@ export default class TimelineItems extends DataSet<TimelineItem> {
     event.preventDefault();
 
     const start = this.getAddedItemStart(event);
-    this.updateOnly({
+    this.update({
       id: this.CURSOR_ID,
       start,
       end: start,
