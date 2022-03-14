@@ -13,11 +13,19 @@ const baseActions: Omit<Action, 'job'>[] = [
     mpCost: 0,
   },
   {
-    name: 'Test',
-    potency: 0,
+    name: 'Ruin III',
+    potency: 310,
     castTime: 1.5,
     nextGCD: 2.5,
-    cooldown: 60,
+    cooldown: 2.5,
+    mpCost: 300,
+  },
+  {
+    name: 'Fester',
+    potency: 300,
+    castTime: 0,
+    nextGCD: 0,
+    cooldown: 0,
     mpCost: 0,
   },
 ];
