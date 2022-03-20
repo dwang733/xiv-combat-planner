@@ -64,6 +64,9 @@ export default function TimelineComponent() {
     zoomMin: 10 * 1000,
     zoomMax: 10 * 60 * 1000,
     zoomFriction: 20,
+    /* Selection settings */
+    multiselect: true,
+    sequentialSelection: true,
     /** Event listeners */
     editable: true,
     onAdd,
