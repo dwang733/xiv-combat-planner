@@ -2,11 +2,16 @@ import React, { useEffect, useRef } from 'react';
 
 import moment from 'moment/moment';
 import { createNewDataPipeFrom } from 'vis-data/peer';
-import { Timeline, TimelineOptions } from 'vis-timeline/peer';
+import { IdType, Timeline, TimelineOptions } from 'vis-timeline/peer';
 
 import { ActionItemPartial, ActionItem } from '../actionTypes';
 import TimelineItems from './TimelineItems';
 import ActionItems from './ActionItems';
+
+interface SelectEvent {
+  items: IdType[];
+  event: Event;
+}
 
 export default function TimelineComponent() {
   const timelineDivRef = useRef<HTMLDivElement>(null);
@@ -16,22 +21,42 @@ export default function TimelineComponent() {
   const timelineItems = new TimelineItems(actionItems);
 
   const childrenEntered = new Set<EventTarget>();
+  let selectionIds: IdType[] | null = null;
 
-  function onAdd(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const actionItem = ti as ActionItem;
+  function onAdd(itemArg: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const actionItem = itemArg as ActionItem;
     actionItems.add(actionItem);
     callback(null);
   }
 
-  function onMoving(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const actionItem = ti as ActionItem;
-    actionItems.updateOnly(actionItem);
+  function onMoving(
+    itemArg: ActionItemPartial,
+    callback: (item: ActionItemPartial | null) => void
+  ) {
+    // Base cursor on earliest selection's position
+    if (selectionIds != null && itemArg.id !== selectionIds[0]) {
+      callback(null);
+    }
+
+    timelineItems.updateCursor(moment(itemArg.start).toISOString());
     callback(null);
   }
 
-  function onRemove(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const gcdItem = ti as ActionItem;
-    actionItems.remove(gcdItem);
+  function onMove(itemArg: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const actionItem = itemArg as ActionItem;
+    // TODO: Need rotation planner to move items around
+    console.log(`onMove(): ${actionItem.name} to ${moment(actionItem.start).toISOString()}`);
+    actionItems.updateOnly(actionItem);
+    timelineItems.removeCursor();
+    callback(null);
+  }
+
+  function onRemove(
+    itemArg: ActionItemPartial,
+    callback: (item: ActionItemPartial | null) => void
+  ) {
+    const actionItem = itemArg as ActionItem;
+    actionItems.remove(actionItem);
     callback(null);
   }
 
@@ -73,6 +98,7 @@ export default function TimelineComponent() {
     editable: true,
     onAdd,
     onMoving,
+    onMove,
     onRemove,
     /** Formatting settings */
     format: {
@@ -100,10 +126,14 @@ export default function TimelineComponent() {
     moment: (date: moment.MomentInput) => moment.utc(date),
   };
 
+  function handleSelect(properties: SelectEvent) {
+    selectionIds = properties.items;
+  }
+
   useEffect(() => {
     if (timeline.current == null) {
-      timeline.current =
-        timelineDivRef.current && new Timeline(timelineDivRef.current, timelineItems, options);
+      timeline.current = new Timeline(timelineDivRef.current!, timelineItems, options);
+      timeline.current!.on('select', handleSelect);
     }
   });
 

@@ -47,10 +47,14 @@ export default class ActionItems extends DataSet<ActionItem> {
 
     const actionItem = this.get(updateItem.id);
     if (moment(updateItem.start).valueOf() !== moment(actionItem?.start).valueOf()) {
-      const snapPoint = this.getSnapPoint(updateItem);
+      // const snapPoint = this.getSnapPoint(updateItem);
+      // super.updateOnly({
+      //   id: updateItem.id,
+      //   start: snapPoint,
+      // });
       super.updateOnly({
         id: updateItem.id,
-        start: snapPoint,
+        start: moment(updateItem.start).toISOString(),
       });
     }
 
