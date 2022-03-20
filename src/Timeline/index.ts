@@ -1,3 +1,3 @@
-import TimelineComponent from './Timeline';
+import TimelineComponent from './TimelineComponent';
 
 export default TimelineComponent;

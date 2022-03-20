@@ -13,7 +13,9 @@ export default function TimelineComponent() {
   const timeline = useRef<Timeline | null>(null);
 
   const actionItems = new ActionItems(timeline);
-  const timelineItems = new TimelineItems(timelineDivRef, timeline, actionItems);
+  const timelineItems = new TimelineItems(actionItems);
+
+  const childrenEntered = new Set<EventTarget>();
 
   function onAdd(ti: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
     const actionItem = ti as ActionItem;
@@ -105,14 +107,77 @@ export default function TimelineComponent() {
     }
   });
 
+  /**
+   * Get the item's start time based on the cursor's relative position to the timeline.
+   * @param event The event that triggered the cursor start calculation.
+   * @returns The item's start as an ISO string.
+   */
+  function getCursorTime(event: React.DragEvent<HTMLElement>) {
+    const timeWindow = timeline.current!.getWindow();
+    const timeStart = moment(timeWindow.start);
+    const timeEnd = moment(timeWindow.end);
+    const width = timelineDivRef.current!.offsetWidth;
+    const x = event.clientX;
+
+    // Get new item start based on ratio of cursor x pos and timeline window start
+    const timeDiff = timeEnd.unix() - timeStart.unix();
+    const secondsSinceTimeStart = timeDiff * (x / width);
+    const itemStart = timeStart.add(secondsSinceTimeStart, 'seconds').toISOString();
+    return itemStart;
+  }
+
+  function handleDragEnter(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+
+    // Keep track of all drag enter events, including children.
+    const oldNumChildren = childrenEntered.size;
+    childrenEntered.add(event.target);
+    if (oldNumChildren > 0) {
+      return;
+    }
+
+    const start = getCursorTime(event);
+    timelineItems.updateCursor(start);
+  }
+
+  function handleDragOver(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+
+    const start = getCursorTime(event);
+    timelineItems.updateCursor(start);
+  }
+
+  function handleDragLeave(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+
+    setTimeout(() => {
+      // Remove drag enter event from set
+      childrenEntered.delete(event.target);
+
+      // Only remove cursor if exited all children or drop event triggered
+      if (childrenEntered.size === 0) {
+        timelineItems.removeCursor();
+      }
+    }, 1);
+  }
+
+  function handleDrop(event: React.DragEvent<HTMLElement>) {
+    event.preventDefault();
+
+    setTimeout(() => {
+      childrenEntered.clear();
+      timelineItems.removeCursor();
+    }, 1);
+  }
+
   return (
     <div
       id="visualization"
       ref={timelineDivRef}
-      onDragEnterCapture={timelineItems.addCursor}
-      onDragOverCapture={timelineItems.moveCursor}
-      onDragLeaveCapture={(e) => timelineItems.removeCursor(e, false)}
-      onDropCapture={(e) => timelineItems.removeCursor(e, true)}
+      onDragEnterCapture={handleDragEnter}
+      onDragOverCapture={handleDragOver}
+      onDragLeaveCapture={handleDragLeave}
+      onDropCapture={handleDrop}
     />
   );
 }
