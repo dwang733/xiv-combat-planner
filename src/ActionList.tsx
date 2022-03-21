@@ -13,6 +13,7 @@ function ActionListItem(props: { action: Action }) {
     const item: Partial<ActionItem> = {
       id: `${action.job}-${action.name}-${new Date().getTime()}`,
       type: 'point',
+      className: 'timeline-action-item',
       content: ReactDOMServer.renderToStaticMarkup(iconImageElement),
       ...action,
     };

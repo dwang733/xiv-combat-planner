@@ -25,7 +25,7 @@ export default class TimelineItems extends DataSet<TimelineItem> {
       content: '',
     };
 
-    const snapStart = this.rotationPlanner.getClosestSnapPoint(this.cursorItem);
+    const snapStart = this.rotationPlanner.getClosestSnapPoint(this.cursorItem.start);
     this.cursorItem.start = snapStart;
     this.cursorItem.end = snapStart;
 
@@ -38,5 +38,16 @@ export default class TimelineItems extends DataSet<TimelineItem> {
   removeCursor() {
     this.cursorItem = null;
     this.remove(this.CURSOR_ID);
+  }
+
+  /**
+   * Get the time where the cursor is at.
+   */
+  getCursorTime() {
+    if (!this.cursorItem) {
+      throw new Error('Cursor is not defined.');
+    }
+
+    return this.cursorItem.start;
   }
 }

@@ -20,14 +20,14 @@ const baseActions: Omit<Action, 'job'>[] = [
     cooldown: 2.5,
     mpCost: 300,
   },
-  {
-    name: 'Fester',
-    potency: 300,
-    castTime: 0,
-    nextGCD: 0,
-    cooldown: 0,
-    mpCost: 0,
-  },
+  // {
+  //   name: 'Fester',
+  //   potency: 300,
+  //   castTime: 0,
+  //   nextGCD: 0,
+  //   cooldown: 0,
+  //   mpCost: 0,
+  // },
 ];
 const actions: Action[] = baseActions.map((a) => ({ ...a, job: abbr }));
 

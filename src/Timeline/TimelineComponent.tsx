@@ -26,7 +26,9 @@ export default function TimelineComponent() {
 
   function onAdd(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
     const actionItem = item as ActionItem;
-    rotationPlanner.addActions([actionItem]);
+    actionItem.start = moment(actionItem.start).toISOString();
+
+    rotationPlanner.addActions(actionItem, timelineItems.getCursorTime());
     callback(null);
   }
 
@@ -42,11 +44,11 @@ export default function TimelineComponent() {
 
   function onMove(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
     const actionItem = item as ActionItem;
-    // TODO: Need rotation planner to move items around
-    console.log(`onMove(): ${actionItem.name} to ${moment(actionItem.start).toISOString()}`);
+    actionItem.start = moment(actionItem.start).toISOString();
+
     selectionItems.push(actionItem);
     if (selectionItems.length === selectionIds?.length) {
-      rotationPlanner.moveActions(selectionItems);
+      rotationPlanner.moveActions(selectionItems, timelineItems.getCursorTime());
       selectionItems = [];
       timelineItems.removeCursor();
     }
@@ -59,20 +61,20 @@ export default function TimelineComponent() {
     callback(null);
   }
 
-  // const actionToTimelinePipe = createNewDataPipeFrom(actionItems)
-  //   // .map((item) => item)
-  //   .flatMap((gcdItem) => {
-  //     const gcdBackgroundItem: ActionItemPartial = {
-  //       id: `${gcdItem.id}-gcdBackground`,
-  //       content: '',
-  //       start: moment(gcdItem.start).toISOString(),
-  //       end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
-  //       type: 'background',
-  //     };
-  //     return [gcdItem, gcdBackgroundItem];
-  //   })
-  //   .to(timelineItems);
-  // actionToTimelinePipe.all().start();
+  const actionToTimelinePipe = createNewDataPipeFrom(rotationPlanner.actionItemsDataSet)
+    // .map((item) => item)
+    .flatMap((gcdItem) => {
+      const gcdBackgroundItem: ActionItemPartial = {
+        id: `${gcdItem.id}-gcdBackground`,
+        content: '',
+        start: moment(gcdItem.start).toISOString(),
+        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
+        type: 'background',
+      };
+      return [gcdItem, gcdBackgroundItem];
+    })
+    .to(timelineItems);
+  actionToTimelinePipe.all().start();
 
   // Configuration for the Timeline
   const options: TimelineOptions = {
