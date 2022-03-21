@@ -6,7 +6,7 @@ import { IdType, Timeline, TimelineOptions } from 'vis-timeline/peer';
 
 import { ActionItemPartial, ActionItem } from '../actionTypes';
 import TimelineItems from './TimelineItems';
-import ActionItems from './ActionItems';
+import RotationPlanner from './RotationPlanner';
 
 interface SelectEvent {
   items: IdType[];
@@ -17,63 +17,62 @@ export default function TimelineComponent() {
   const timelineDivRef = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
 
-  const actionItems = new ActionItems(timeline);
-  const timelineItems = new TimelineItems(actionItems);
+  const rotationPlanner = new RotationPlanner();
+  const timelineItems = new TimelineItems(rotationPlanner);
 
   const childrenEntered = new Set<EventTarget>();
   let selectionIds: IdType[] | null = null;
+  let selectionItems: ActionItem[] = [];
 
-  function onAdd(itemArg: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const actionItem = itemArg as ActionItem;
-    actionItems.add(actionItem);
+  function onAdd(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const actionItem = item as ActionItem;
+    rotationPlanner.addActions([actionItem]);
     callback(null);
   }
 
-  function onMoving(
-    itemArg: ActionItemPartial,
-    callback: (item: ActionItemPartial | null) => void
-  ) {
+  function onMoving(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
     // Base cursor on earliest selection's position
-    if (selectionIds != null && itemArg.id !== selectionIds[0]) {
+    if (selectionIds != null && item.id !== selectionIds[0]) {
       callback(null);
     }
 
-    timelineItems.updateCursor(moment(itemArg.start).toISOString());
+    timelineItems.updateCursor(moment(item.start).toISOString());
     callback(null);
   }
 
-  function onMove(itemArg: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const actionItem = itemArg as ActionItem;
+  function onMove(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const actionItem = item as ActionItem;
     // TODO: Need rotation planner to move items around
     console.log(`onMove(): ${actionItem.name} to ${moment(actionItem.start).toISOString()}`);
-    actionItems.updateOnly(actionItem);
-    timelineItems.removeCursor();
+    selectionItems.push(actionItem);
+    if (selectionItems.length === selectionIds?.length) {
+      rotationPlanner.moveActions(selectionItems);
+      selectionItems = [];
+      timelineItems.removeCursor();
+    }
     callback(null);
   }
 
-  function onRemove(
-    itemArg: ActionItemPartial,
-    callback: (item: ActionItemPartial | null) => void
-  ) {
-    const actionItem = itemArg as ActionItem;
-    actionItems.remove(actionItem);
+  function onRemove(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+    const actionItem = item as ActionItem;
+    rotationPlanner.removeActions(actionItem);
     callback(null);
   }
 
-  const actionToTimelinePipe = createNewDataPipeFrom(actionItems)
-    // .map((item) => item)
-    .flatMap((gcdItem) => {
-      const gcdBackgroundItem: ActionItemPartial = {
-        id: `${gcdItem.id}-gcdBackground`,
-        content: '',
-        start: moment(gcdItem.start).toISOString(),
-        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
-        type: 'background',
-      };
-      return [gcdItem, gcdBackgroundItem];
-    })
-    .to(timelineItems);
-  actionToTimelinePipe.all().start();
+  // const actionToTimelinePipe = createNewDataPipeFrom(actionItems)
+  //   // .map((item) => item)
+  //   .flatMap((gcdItem) => {
+  //     const gcdBackgroundItem: ActionItemPartial = {
+  //       id: `${gcdItem.id}-gcdBackground`,
+  //       content: '',
+  //       start: moment(gcdItem.start).toISOString(),
+  //       end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
+  //       type: 'background',
+  //     };
+  //     return [gcdItem, gcdBackgroundItem];
+  //   })
+  //   .to(timelineItems);
+  // actionToTimelinePipe.all().start();
 
   // Configuration for the Timeline
   const options: TimelineOptions = {
@@ -180,6 +179,7 @@ export default function TimelineComponent() {
   function handleDragLeave(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
 
+    // Set timeout for FireFox browser
     setTimeout(() => {
       // Remove drag enter event from set
       childrenEntered.delete(event.target);

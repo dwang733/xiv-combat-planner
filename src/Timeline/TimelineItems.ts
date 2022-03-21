@@ -1,12 +1,13 @@
 import { DataSet } from 'vis-data/peer';
 import { TimelineItem } from 'vis-timeline/peer';
-import ActionItems from './ActionItems';
+
+import RotationPlanner from './RotationPlanner';
 
 export default class TimelineItems extends DataSet<TimelineItem> {
   private readonly CURSOR_ID = 'cursor';
   private cursorItem: TimelineItem | null = null;
 
-  constructor(private actionItems: ActionItems) {
+  constructor(private rotationPlanner: RotationPlanner) {
     super();
   }
 
@@ -24,7 +25,7 @@ export default class TimelineItems extends DataSet<TimelineItem> {
       content: '',
     };
 
-    const snapStart = this.actionItems.getSnapPoint(this.cursorItem);
+    const snapStart = this.rotationPlanner.getClosestSnapPoint(this.cursorItem);
     this.cursorItem.start = snapStart;
     this.cursorItem.end = snapStart;
 

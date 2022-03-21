@@ -8,8 +8,7 @@ function ActionListItem(props: { action: Action }) {
   const iconPath = `./${action.job.toLowerCase()}/${action.name}.png`;
   const iconImageElement = <img src={iconPath} alt={action.name} />;
 
-  function handleDragStart(eventArg: React.DragEvent<HTMLElement>) {
-    const event = eventArg;
+  function handleDragStart(event: React.DragEvent<HTMLElement>) {
     event.dataTransfer.effectAllowed = 'move';
     const item: Partial<ActionItem> = {
       id: `${action.job}-${action.name}-${new Date().getTime()}`,
