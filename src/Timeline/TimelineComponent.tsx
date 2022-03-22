@@ -95,6 +95,7 @@ export default function TimelineComponent() {
     /* Selection settings */
     multiselect: true,
     sequentialSelection: true,
+    stack: false,
     /** Event listeners */
     editable: true,
     onAdd,

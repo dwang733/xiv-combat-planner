@@ -54,6 +54,6 @@ li.item {
   background-color: black;
 }
 
-/* .vis-item.timeline-action-item {
-  width: 0;
-} */
+.vis-item.timeline-action-item {
+  width: 0%;
+}
