@@ -91,7 +91,7 @@ export default class RotationManager {
   }
 
   /**
-   * Remove the cursor on the timeline if needed.
+   * Removes the cursor on the timeline if needed.
    */
   removeCursor() {
     this.cursorItem = null;
@@ -108,16 +108,38 @@ export default class RotationManager {
       return 0;
     }
 
+    // Binary search shamelessly copied from https://stackoverflow.com/a/69561088/5090107
     const itemStartInMs = moment(time).valueOf();
-    // Store reduce state as (snap point, abs diff to time)
-    const [closestTime] = this.snapPoints.reduce<number[]>(
-      (prev, curr) => {
-        const diff = Math.abs(curr - itemStartInMs);
-        return diff < prev[1] ? [curr, diff] : prev;
-      },
-      [Infinity, Infinity]
+    let startIdx = 0;
+    let endIdx = this.snapPoints.length - 1;
+    let midIdx = Math.floor((startIdx + endIdx) / 2);
+
+    while (startIdx < endIdx) {
+      const snapPoint = this.snapPoints[midIdx];
+      if (snapPoint === itemStartInMs) {
+        return snapPoint;
+      }
+
+      if (startIdx >= endIdx) {
+        break;
+      }
+
+      if (snapPoint > itemStartInMs) {
+        endIdx = midIdx - 1;
+      } else {
+        startIdx = midIdx + 1;
+      }
+
+      midIdx = Math.floor((startIdx + endIdx) / 2);
+    }
+
+    // Return the closest between the last value checked and its surrounding neighbors
+    const firstIdx = Math.max(midIdx - 1, 0);
+    const neighbors = this.snapPoints.slice(firstIdx, midIdx + 2);
+    const best = neighbors.reduce((b, el) =>
+      Math.abs(el - itemStartInMs) < Math.abs(b - itemStartInMs) ? el : b
     );
-    return closestTime;
+    return best;
   }
 
   private recalculateRotation(actions: ActionItem | ActionItem[], type: 'add' | 'remove' | 'move') {
@@ -197,6 +219,10 @@ export default class RotationManager {
 
       return itemSnapPoints;
     });
+
+    // Remove duplicates
     this.snapPoints = [...new Set(newSnapPoints)];
+    // Sort for safety (and explicitly give comparer because JS is STUPID AND SORTS BY ASCII BY DEFAULT)
+    this.snapPoints.sort((a, b) => a - b);
   }
 }
