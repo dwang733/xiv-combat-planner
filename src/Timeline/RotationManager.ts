@@ -4,7 +4,7 @@ import { DateType, TimelineItem } from 'vis-timeline/peer';
 
 import { ActionItem, ActionItemPartial } from '../actionTypes';
 
-const ANIMATION_LOCK_IN_MS = 500;
+const ANIMATION_LOCK_IN_MS = 600;
 
 function createActionToTimelinePipeline(
   actionItems: DataSet<ActionItem>,
