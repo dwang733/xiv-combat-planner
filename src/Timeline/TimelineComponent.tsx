@@ -6,7 +6,7 @@ import { IdType, Timeline, TimelineOptions } from 'vis-timeline/peer';
 
 import { ActionItemPartial, ActionItem } from '../actionTypes';
 import TimelineItems from './TimelineItems';
-import RotationPlanner from './RotationPlanner';
+import RotationManager from './RotationManager';
 
 interface SelectEvent {
   items: IdType[];
@@ -17,7 +17,7 @@ export default function TimelineComponent() {
   const timelineDivRef = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
 
-  const rotationPlanner = new RotationPlanner();
+  const rotationPlanner = new RotationManager();
   const timelineItems = new TimelineItems(rotationPlanner);
 
   const childrenEntered = new Set<EventTarget>();

@@ -1,13 +1,13 @@
 import { DataSet } from 'vis-data/peer';
 import { TimelineItem } from 'vis-timeline/peer';
 
-import RotationPlanner from './RotationPlanner';
+import RotationManager from './RotationManager';
 
 export default class TimelineItems extends DataSet<TimelineItem> {
   private readonly CURSOR_ID = 'cursor';
   private cursorItem: TimelineItem | null = null;
 
-  constructor(private rotationPlanner: RotationPlanner) {
+  constructor(private rotationPlanner: RotationManager) {
     super();
   }
 
