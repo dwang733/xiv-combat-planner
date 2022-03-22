@@ -1,11 +1,9 @@
 import React, { useEffect, useRef } from 'react';
 
 import moment from 'moment/moment';
-import { createNewDataPipeFrom } from 'vis-data/peer';
 import { IdType, Timeline, TimelineOptions } from 'vis-timeline/peer';
 
 import { ActionItemPartial, ActionItem } from '../actionTypes';
-import TimelineItems from './TimelineItems';
 import RotationManager from './RotationManager';
 
 interface SelectEvent {
@@ -17,8 +15,7 @@ export default function TimelineComponent() {
   const timelineDivRef = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
 
-  const rotationPlanner = new RotationManager();
-  const timelineItems = new TimelineItems(rotationPlanner);
+  const rotationManager = new RotationManager();
 
   const childrenEntered = new Set<EventTarget>();
   let selectionIds: IdType[] | null = null;
@@ -28,7 +25,7 @@ export default function TimelineComponent() {
     const actionItem = item as ActionItem;
     actionItem.start = moment(actionItem.start).toISOString();
 
-    rotationPlanner.addActions(actionItem, timelineItems.getCursorTime());
+    rotationManager.addActions(actionItem);
     callback(null);
   }
 
@@ -38,7 +35,7 @@ export default function TimelineComponent() {
       callback(null);
     }
 
-    timelineItems.updateCursor(moment(item.start).toISOString());
+    rotationManager.updateCursor(moment(item.start).toISOString());
     callback(null);
   }
 
@@ -48,33 +45,18 @@ export default function TimelineComponent() {
 
     selectionItems.push(actionItem);
     if (selectionItems.length === selectionIds?.length) {
-      rotationPlanner.moveActions(selectionItems, timelineItems.getCursorTime());
+      rotationManager.moveActions(selectionItems);
       selectionItems = [];
-      timelineItems.removeCursor();
+      rotationManager.removeCursor();
     }
     callback(null);
   }
 
   function onRemove(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
     const actionItem = item as ActionItem;
-    rotationPlanner.removeActions(actionItem);
+    rotationManager.removeActions(actionItem);
     callback(null);
   }
-
-  const actionToTimelinePipe = createNewDataPipeFrom(rotationPlanner.actionItemsDataSet)
-    // .map((item) => item)
-    .flatMap((gcdItem) => {
-      const gcdBackgroundItem: ActionItemPartial = {
-        id: `${gcdItem.id}-gcdBackground`,
-        content: '',
-        start: moment(gcdItem.start).toISOString(),
-        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
-        type: 'background',
-      };
-      return [gcdItem, gcdBackgroundItem];
-    })
-    .to(timelineItems);
-  actionToTimelinePipe.all().start();
 
   // Configuration for the Timeline
   const options: TimelineOptions = {
@@ -134,7 +116,11 @@ export default function TimelineComponent() {
 
   useEffect(() => {
     if (timeline.current == null) {
-      timeline.current = new Timeline(timelineDivRef.current!, timelineItems, options);
+      timeline.current = new Timeline(
+        timelineDivRef.current!,
+        rotationManager.timelineItemsDataSet,
+        options
+      );
       timeline.current!.on('select', handleSelect);
     }
   });
@@ -169,14 +155,14 @@ export default function TimelineComponent() {
     }
 
     const start = getCursorTime(event);
-    timelineItems.updateCursor(start);
+    rotationManager.updateCursor(start);
   }
 
   function handleDragOver(event: React.DragEvent<HTMLElement>) {
     event.preventDefault();
 
     const start = getCursorTime(event);
-    timelineItems.updateCursor(start);
+    rotationManager.updateCursor(start);
   }
 
   function handleDragLeave(event: React.DragEvent<HTMLElement>) {
@@ -189,7 +175,7 @@ export default function TimelineComponent() {
 
       // Only remove cursor if exited all children or drop event triggered
       if (childrenEntered.size === 0) {
-        timelineItems.removeCursor();
+        rotationManager.removeCursor();
       }
     }, 1);
   }
@@ -199,7 +185,7 @@ export default function TimelineComponent() {
 
     setTimeout(() => {
       childrenEntered.clear();
-      timelineItems.removeCursor();
+      rotationManager.removeCursor();
     }, 1);
   }
 

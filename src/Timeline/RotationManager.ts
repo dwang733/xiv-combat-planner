@@ -1,25 +1,56 @@
 import moment from 'moment';
-import { DataSet } from 'vis-data/peer';
-import { DateType } from 'vis-timeline/peer';
+import { createNewDataPipeFrom, DataPipe, DataSet } from 'vis-data/peer';
+import { DateType, TimelineItem } from 'vis-timeline/peer';
 
-import { ActionItem } from '../actionTypes';
+import { ActionItem, ActionItemPartial } from '../actionTypes';
 
 const ANIMATION_LOCK_IN_MS = 500;
+
+function createActionToTimelinePipeline(
+  actionItems: DataSet<ActionItem>,
+  timelineItems: DataSet<TimelineItem>
+) {
+  return createNewDataPipeFrom(actionItems)
+    .flatMap((gcdItem) => {
+      const gcdBackgroundItem: ActionItemPartial = {
+        id: `${gcdItem.id}-gcdBackground`,
+        content: '',
+        start: moment(gcdItem.start).toISOString(),
+        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
+        type: 'background',
+      };
+      return [gcdItem, gcdBackgroundItem];
+    })
+    .to(timelineItems);
+}
 
 export default class RotationManager {
   // Snap points for actions items in ms
   private snapPoints: number[] = [];
   private actionItemsArray: ActionItem[] = [];
+  private actionToTimelinePipeline: DataPipe;
+
+  // Cursor variables
+  private readonly CURSOR_ID = 'cursor';
+  private cursorItem: TimelineItem | null = null;
 
   public actionItemsDataSet = new DataSet<ActionItem>();
+  public timelineItemsDataSet = new DataSet<TimelineItem>();
+
+  constructor() {
+    this.actionToTimelinePipeline = createActionToTimelinePipeline(
+      this.actionItemsDataSet,
+      this.timelineItemsDataSet
+    );
+    this.actionToTimelinePipeline.all().start();
+  }
 
   /**
    * Adds actions to the action items.
    * @param actions An action or array of actions to add.
-   * @param cursorTime The time where the cursor is at.
    */
-  addActions(actions: ActionItem | ActionItem[], cursorTime: DateType) {
-    this.recalculateRotation(actions, 'add', cursorTime);
+  addActions(actions: ActionItem | ActionItem[]) {
+    this.recalculateRotation(actions, 'add');
   }
 
   /**
@@ -33,10 +64,38 @@ export default class RotationManager {
   /**
    * Moves actions in the action items.
    * @param actions An action or array of actions to move.
-   * @param cursorTime The time where the cursor is at.
    */
-  moveActions(actions: ActionItem | ActionItem[], cursorTime: DateType) {
-    this.recalculateRotation(actions, 'move', cursorTime);
+  moveActions(actions: ActionItem | ActionItem[]) {
+    this.recalculateRotation(actions, 'move');
+  }
+
+  /**
+   * Updates the cursor on the timeline, or adds a cursor if it doesn't exist.
+   * @param cursorTime The time where the cursor is currently.
+   */
+  updateCursor(cursorTime: string) {
+    this.cursorItem = {
+      id: this.CURSOR_ID,
+      start: cursorTime,
+      end: cursorTime,
+      type: 'range',
+      className: 'timeline-cursor',
+      content: '',
+    };
+
+    const snapStart = this.getClosestSnapPoint(this.cursorItem.start);
+    this.cursorItem.start = snapStart;
+    this.cursorItem.end = snapStart;
+
+    this.timelineItemsDataSet.update(this.cursorItem);
+  }
+
+  /**
+   * Remove the cursor on the timeline if needed.
+   */
+  removeCursor() {
+    this.cursorItem = null;
+    this.timelineItemsDataSet.remove(this.CURSOR_ID);
   }
 
   /**
@@ -61,11 +120,7 @@ export default class RotationManager {
     return closestTime;
   }
 
-  private recalculateRotation(
-    actions: ActionItem | ActionItem[],
-    type: 'add' | 'remove' | 'move',
-    cursorTime?: DateType
-  ) {
+  private recalculateRotation(actions: ActionItem | ActionItem[], type: 'add' | 'remove' | 'move') {
     const actionsArray = Array.isArray(actions) ? actions : [actions];
     actionsArray.sort((a, b) => moment(a.start).valueOf() - moment(b.start).valueOf());
 
@@ -82,10 +137,7 @@ export default class RotationManager {
 
     let addIndex: number = Infinity;
     if (type === 'add' || type === 'move') {
-      if (cursorTime === undefined) {
-        throw new Error('cursorTime must be defined when adding or moving items in rotation');
-      }
-
+      const cursorTime = this.cursorItem!.start;
       const snapPoint = this.getClosestSnapPoint(cursorTime);
       addIndex = this.actionItemsArray.findIndex(
         (a) => moment(a.start).valueOf() >= moment(snapPoint).valueOf()
