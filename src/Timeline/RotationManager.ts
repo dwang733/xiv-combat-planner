@@ -4,7 +4,7 @@ import { DateType, TimelineItem } from 'vis-timeline/peer';
 
 import { ActionItem, ActionItemPartial } from '../actionTypes';
 
-const ANIMATION_LOCK_IN_MS = 600;
+const ANIMATION_LOCK = 600;
 
 function createActionToTimelinePipeline(
   actionItems: DataSet<ActionItem>,
@@ -16,7 +16,7 @@ function createActionToTimelinePipeline(
         id: `${gcdItem.id}-gcdBackground`,
         content: '',
         start: moment(gcdItem.start).toISOString(),
-        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'seconds').toISOString(),
+        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'milliseconds').toISOString(),
         type: 'background',
       };
       return [gcdItem, gcdBackgroundItem];
@@ -190,7 +190,7 @@ export default class RotationManager {
       } else {
         const prevItem = this.actionItemsArray[i - 1];
         // TODO: Handle oGCDs
-        currItem.start = moment(prevItem.start).valueOf() + prevItem.nextGCD * 1000;
+        currItem.start = moment(prevItem.start).valueOf() + prevItem.nextGCD;
       }
 
       this.actionItemsDataSet.updateOnly(currItem);
@@ -201,20 +201,20 @@ export default class RotationManager {
 
   private recalculateSnapPoints() {
     const newSnapPoints = this.actionItemsArray.flatMap((item) => {
-      const itemStartInMs = moment(item.start).valueOf();
-      const itemSnapPoints = [itemStartInMs];
+      const itemStart = moment(item.start).valueOf();
+      const itemSnapPoints = [itemStart];
       if (item.nextGCD > 0) {
         // Add snap points for GCD
-        const itemGCDEndInMs = itemStartInMs + item.nextGCD * 1000;
-        itemSnapPoints.push(itemGCDEndInMs);
+        const itemGCDEnd = itemStart + item.nextGCD;
+        itemSnapPoints.push(itemGCDEnd);
         if (item.castTime > 0) {
-          const itemCastEndInMs = itemStartInMs + item.castTime * 1000;
-          itemSnapPoints.push(itemCastEndInMs);
+          const itemCastEnd = itemStart + item.castTime;
+          itemSnapPoints.push(itemCastEnd);
         }
       } else {
         // Add snap points for oGCD
-        const itemLockEndInMs = itemStartInMs + ANIMATION_LOCK_IN_MS;
-        itemSnapPoints.push(itemLockEndInMs);
+        const itemLockEnd = itemStart + ANIMATION_LOCK;
+        itemSnapPoints.push(itemLockEnd);
       }
 
       return itemSnapPoints;
