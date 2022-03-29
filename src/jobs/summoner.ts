@@ -6,6 +6,7 @@ const abbr = 'SMN';
 const baseActions: Omit<Action, 'job'>[] = [
   {
     name: 'Summon Bahamut',
+    level: 70,
     potency: 0,
     castTime: 0,
     damageDelay: 0,
@@ -15,6 +16,7 @@ const baseActions: Omit<Action, 'job'>[] = [
   },
   {
     name: 'Ruin III',
+    level: 54,
     potency: 310,
     castTime: 1.5 * 1000,
     damageDelay: 0.8 * 1000,

@@ -8,6 +8,7 @@ export class Action {
    *
    * @param job The job that uses this action.
    * @param name The name of the action.
+   * @param level The level when you get the action.
    * @param potency The base damage of the action.
    * @param castTime How long to execute an action, in milliseconds.
    * @param nextGCD How long before next GCD can be casted, in milliseconds.
@@ -20,6 +21,7 @@ export class Action {
   constructor(
     public readonly job: string,
     public readonly name: string,
+    public readonly level: number,
     public readonly potency: number,
     public readonly castTime: number,
     public readonly nextGCD: number,
