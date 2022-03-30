@@ -1,22 +1,20 @@
-import moment from 'moment';
 import { createNewDataPipeFrom, DataPipe, DataSet } from 'vis-data/peer';
-import { DateType, TimelineItem } from 'vis-timeline/peer';
 
-import { ActionItem, ActionItemPartial } from '../actionTypes';
+import { ActionItem, ActionItemPartial, SafeTimelineItem } from '../actionTypes';
 
 const ANIMATION_LOCK = 600;
 
 function createActionToTimelinePipeline(
   actionItems: DataSet<ActionItem>,
-  timelineItems: DataSet<TimelineItem>
+  timelineItems: DataSet<SafeTimelineItem>
 ) {
   return createNewDataPipeFrom(actionItems)
     .flatMap((gcdItem) => {
       const gcdBackgroundItem: ActionItemPartial = {
         id: `${gcdItem.id}-gcdBackground`,
         content: '',
-        start: moment(gcdItem.start).toISOString(),
-        end: moment(gcdItem.start).add(gcdItem.nextGCD, 'milliseconds').toISOString(),
+        start: gcdItem.start,
+        end: gcdItem.start + gcdItem.nextGCD,
         type: 'background',
       };
       return [gcdItem, gcdBackgroundItem];
@@ -32,10 +30,10 @@ export default class RotationManager {
 
   // Cursor variables
   private readonly CURSOR_ID = 'cursor';
-  private cursorItem: TimelineItem | null = null;
+  private cursorItem: SafeTimelineItem | null = null;
 
   public actionItemsDataSet = new DataSet<ActionItem>();
-  public timelineItemsDataSet = new DataSet<TimelineItem>();
+  public timelineItemsDataSet = new DataSet<SafeTimelineItem>();
 
   constructor() {
     this.actionToTimelinePipeline = createActionToTimelinePipeline(
@@ -71,9 +69,9 @@ export default class RotationManager {
 
   /**
    * Updates the cursor on the timeline, or adds a cursor if it doesn't exist.
-   * @param cursorTime The time where the cursor is currently.
+   * @param cursorTime The cursor's position in milliseconds.
    */
-  updateCursor(cursorTime: string) {
+  updateCursor(cursorTime: number) {
     this.cursorItem = {
       id: this.CURSOR_ID,
       start: cursorTime,
@@ -103,20 +101,19 @@ export default class RotationManager {
    * @param time The time to find the closest snap point to.
    * @returns The time of the closest snap point.
    */
-  getClosestSnapPoint(time: DateType): DateType {
+  getClosestSnapPoint(time: number): number {
     if (this.snapPoints.length === 0) {
       return 0;
     }
 
     // Binary search shamelessly copied from https://stackoverflow.com/a/69561088/5090107
-    const itemStartInMs = moment(time).valueOf();
     let startIdx = 0;
     let endIdx = this.snapPoints.length - 1;
     let midIdx = Math.floor((startIdx + endIdx) / 2);
 
     while (startIdx < endIdx) {
       const snapPoint = this.snapPoints[midIdx];
-      if (snapPoint === itemStartInMs) {
+      if (snapPoint === time) {
         return snapPoint;
       }
 
@@ -124,7 +121,7 @@ export default class RotationManager {
         break;
       }
 
-      if (snapPoint > itemStartInMs) {
+      if (snapPoint > time) {
         endIdx = midIdx - 1;
       } else {
         startIdx = midIdx + 1;
@@ -136,22 +133,18 @@ export default class RotationManager {
     // Return the closest between the last value checked and its surrounding neighbors
     const firstIdx = Math.max(midIdx - 1, 0);
     const neighbors = this.snapPoints.slice(firstIdx, midIdx + 2);
-    const best = neighbors.reduce((b, el) =>
-      Math.abs(el - itemStartInMs) < Math.abs(b - itemStartInMs) ? el : b
-    );
+    const best = neighbors.reduce((b, el) => (Math.abs(el - time) < Math.abs(b - time) ? el : b));
     return best;
   }
 
   private recalculateRotation(actions: ActionItem | ActionItem[], type: 'add' | 'remove' | 'move') {
     const actionsArray = Array.isArray(actions) ? actions : [actions];
-    actionsArray.sort((a, b) => moment(a.start).valueOf() - moment(b.start).valueOf());
+    actionsArray.sort((a, b) => a.start - b.start);
 
     let removeIndex: number = Infinity;
     if (type === 'remove' || type === 'move') {
       const actionIds = actionsArray.map((a) => a.id);
-      removeIndex = this.actionItemsArray.findIndex(
-        (a) => moment(a.start).valueOf() >= moment(actionsArray[0].start).valueOf()
-      );
+      removeIndex = this.actionItemsArray.findIndex((a) => a.start >= actionsArray[0].start);
 
       this.actionItemsArray = this.actionItemsArray.filter((a) => !actionIds.includes(a.id));
       this.actionItemsDataSet.remove(actionIds);
@@ -161,9 +154,7 @@ export default class RotationManager {
     if (type === 'add' || type === 'move') {
       const cursorTime = this.cursorItem!.start;
       const snapPoint = this.getClosestSnapPoint(cursorTime);
-      addIndex = this.actionItemsArray.findIndex(
-        (a) => moment(a.start).valueOf() >= moment(snapPoint).valueOf()
-      );
+      addIndex = this.actionItemsArray.findIndex((a) => a.start >= snapPoint);
 
       if (addIndex === -1) {
         // Add actions at end of action items array
@@ -190,7 +181,7 @@ export default class RotationManager {
       } else {
         const prevItem = this.actionItemsArray[i - 1];
         // TODO: Handle oGCDs
-        currItem.start = moment(prevItem.start).valueOf() + prevItem.nextGCD;
+        currItem.start = prevItem.start + prevItem.nextGCD;
       }
 
       this.actionItemsDataSet.updateOnly(currItem);
@@ -201,19 +192,18 @@ export default class RotationManager {
 
   private recalculateSnapPoints() {
     const newSnapPoints = this.actionItemsArray.flatMap((item) => {
-      const itemStart = moment(item.start).valueOf();
-      const itemSnapPoints = [itemStart];
+      const itemSnapPoints = [item.start];
       if (item.nextGCD > 0) {
         // Add snap points for GCD
-        const itemGCDEnd = itemStart + item.nextGCD;
+        const itemGCDEnd = item.start + item.nextGCD;
         itemSnapPoints.push(itemGCDEnd);
         if (item.castTime > 0) {
-          const itemCastEnd = itemStart + item.castTime;
+          const itemCastEnd = item.start + item.castTime;
           itemSnapPoints.push(itemCastEnd);
         }
       } else {
         // Add snap points for oGCD
-        const itemLockEnd = itemStart + ANIMATION_LOCK;
+        const itemLockEnd = item.start + ANIMATION_LOCK;
         itemSnapPoints.push(itemLockEnd);
       }
 

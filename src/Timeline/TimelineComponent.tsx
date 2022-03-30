@@ -3,7 +3,7 @@ import React, { useEffect, useRef } from 'react';
 import moment from 'moment/moment';
 import { IdType, Timeline, TimelineOptions } from 'vis-timeline/peer';
 
-import { ActionItemPartial, ActionItem } from '../actionTypes';
+import { ActionItem, UnsafeActionItemPartial, convertToSafeActionItem } from '../actionTypes';
 import RotationManager from './RotationManager';
 
 interface SelectEvent {
@@ -21,28 +21,34 @@ export default function TimelineComponent() {
   let selectionIds: IdType[] | null = null;
   let selectionItems: ActionItem[] = [];
 
-  function onAdd(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const actionItem = item as ActionItem;
-    actionItem.start = moment(actionItem.start).toISOString();
-
+  function onAdd(
+    item: UnsafeActionItemPartial,
+    callback: (item: UnsafeActionItemPartial | null) => void
+  ) {
+    const actionItem = convertToSafeActionItem(item);
     rotationManager.addActions(actionItem);
     callback(null);
   }
 
-  function onMoving(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
+  function onMoving(
+    item: UnsafeActionItemPartial,
+    callback: (item: UnsafeActionItemPartial | null) => void
+  ) {
     // Base cursor on earliest selection's position
     if (selectionIds != null && item.id !== selectionIds[0]) {
       callback(null);
     }
 
-    rotationManager.updateCursor(moment(item.start).toISOString());
+    const actionItem = convertToSafeActionItem(item);
+    rotationManager.updateCursor(actionItem.start);
     callback(null);
   }
 
-  function onMove(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const actionItem = item as ActionItem;
-    actionItem.start = moment(actionItem.start).toISOString();
-
+  function onMove(
+    item: UnsafeActionItemPartial,
+    callback: (item: UnsafeActionItemPartial | null) => void
+  ) {
+    const actionItem = convertToSafeActionItem(item);
     selectionItems.push(actionItem);
     if (selectionItems.length === selectionIds?.length) {
       rotationManager.moveActions(selectionItems);
@@ -52,8 +58,11 @@ export default function TimelineComponent() {
     callback(null);
   }
 
-  function onRemove(item: ActionItemPartial, callback: (item: ActionItemPartial | null) => void) {
-    const actionItem = item as ActionItem;
+  function onRemove(
+    item: UnsafeActionItemPartial,
+    callback: (item: UnsafeActionItemPartial | null) => void
+  ) {
+    const actionItem = convertToSafeActionItem(item);
     rotationManager.removeActions(actionItem);
     callback(null);
   }
@@ -128,9 +137,9 @@ export default function TimelineComponent() {
   /**
    * Get the item's start time based on the cursor's relative position to the timeline.
    * @param event The event that triggered the cursor start calculation.
-   * @returns The item's start as an ISO string.
+   * @returns The item's start time in milliseconds.
    */
-  function getCursorTime(event: React.DragEvent<HTMLElement>) {
+  function getCursorTime(event: React.DragEvent<HTMLElement>): number {
     const timeWindow = timeline.current!.getWindow();
     const timeStart = moment(timeWindow.start);
     const timeEnd = moment(timeWindow.end);
@@ -140,7 +149,7 @@ export default function TimelineComponent() {
     // Get new item start based on ratio of cursor x pos and timeline window start
     const timeDiff = timeEnd.unix() - timeStart.unix();
     const secondsSinceTimeStart = timeDiff * (x / width);
-    const itemStart = timeStart.add(secondsSinceTimeStart, 'seconds').toISOString();
+    const itemStart = timeStart.add(secondsSinceTimeStart, 'seconds').valueOf();
     return itemStart;
   }
 

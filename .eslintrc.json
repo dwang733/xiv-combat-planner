@@ -41,6 +41,17 @@
             {
                 "props": false
             }
+        ],
+        "@typescript-eslint/ban-types": [
+            "error",
+            {
+                "types": {
+                    "TimelineItem": {
+                        "message": "Use UnsafeTimelineItem instead",
+                        "fixWith": "UnsafeTimelineItem"
+                    }
+                }
+            }
         ]
     }
 }

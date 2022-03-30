@@ -1,3 +1,4 @@
+import moment from 'moment';
 import { TimelineItem } from 'vis-timeline/peer';
 
 /**
@@ -28,13 +29,34 @@ export class Action {
     public readonly cooldown: number,
     public readonly damageDelay: number,
     public readonly mpCost: number,
+    // eslint-disable-next-line @typescript-eslint/ban-types
     public readonly beforeEffects?: Function,
+    // eslint-disable-next-line @typescript-eslint/ban-types
     public readonly afterEffects?: Function
   ) {}
 }
 
-export type ActionItem = TimelineItem & Action;
-export type ActionItemPartial = TimelineItem & Partial<Action>;
+// eslint-disable-next-line @typescript-eslint/ban-types
+export type UnsafeTimelineItem = TimelineItem;
+export type UnsafeActionItem = UnsafeTimelineItem & Action;
+export type UnsafeActionItemPartial = UnsafeTimelineItem & Partial<Action>;
+
+export type SafeTimelineItem = Omit<UnsafeTimelineItem, 'start' | 'end'> & {
+  start: number;
+  end: number;
+};
+export type ActionItem = SafeTimelineItem & Action;
+export type ActionItemPartial = SafeTimelineItem & Partial<Action>;
+
+export function convertToSafeActionItem(unsafeItem: UnsafeActionItem | UnsafeActionItemPartial) {
+  const unsafeFullItem = unsafeItem as UnsafeActionItem;
+  const actionItem: ActionItem = {
+    ...unsafeFullItem,
+    start: moment(unsafeFullItem.start).valueOf(),
+    end: moment(unsafeFullItem.end).valueOf(),
+  };
+  return actionItem;
+}
 
 export interface Job {
   name: string;
