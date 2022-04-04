@@ -48,12 +48,17 @@ li.item {
   padding: 5px 12px;
 }
 
-.vis-item.timeline-cursor {
+.vis-item .vis-item-content {
+  margin-left: 0px !important;
+  padding: 0px;
+}
+
+.vis-item .timeline-cursor {
   /* Set cursor css here */
   border: none;
   background-color: black;
 }
 
-.vis-item.timeline-action-item {
+.vis-item .timeline-action-item {
   width: 0%;
 }
