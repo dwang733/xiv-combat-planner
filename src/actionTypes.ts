@@ -45,12 +45,12 @@ export interface ActionProperties {
 
 export interface Action extends ActionProperties {}
 export class Action {
+  /** True if the action is a GCD. */
+  readonly isGCD: boolean;
+
   constructor(data: ActionProperties) {
     Object.assign(this, data);
-  }
-
-  get gcd() {
-    return this.actionType === 'skill' || this.actionType === 'spell';
+    this.isGCD = this.actionType === 'skill' || this.actionType === 'spell';
   }
 }
 
@@ -62,7 +62,7 @@ export type UnsafeActionItemPartial = UnsafeTimelineItem & Partial<Action>;
 /** TimelineItem that ensures start and end times must be in milliseconds */
 export type SafeTimelineItem = Omit<UnsafeTimelineItem, 'start' | 'end'> & {
   start: number;
-  end: number;
+  end?: number;
 };
 export type ActionItem = SafeTimelineItem & Action;
 export type ActionItemPartial = SafeTimelineItem & Partial<Action>;

@@ -173,14 +173,23 @@ export default class RotationManager {
     }
 
     // Recalculate start time for affected actions
-    for (let i = Math.min(addIndex, removeIndex); i < this.actionItemsArray.length; i += 1) {
+    const startIndex = Math.min(addIndex, removeIndex);
+    // let lastGCD = this.actionItemsArray[startIndex];
+    for (let i = startIndex; i < this.actionItemsArray.length; i += 1) {
       const currItem = this.actionItemsArray[i];
 
       if (i === 0) {
         currItem.start = 0;
       } else {
         const prevItem = this.actionItemsArray[i - 1];
+        console.log(prevItem.start, currItem.start, currItem.isGCD);
         // TODO: Handle oGCDs
+        // if (currItem.isGCD) {
+        //   currItem.start = lastGCD.start + prevItem.nextGCD;
+        //   lastGCD = currItem;
+        // } else {
+        //   currItem.start = prevItem.start + ANIMATION_LOCK;
+        // }
         currItem.start = prevItem.start + prevItem.nextGCD;
       }
 

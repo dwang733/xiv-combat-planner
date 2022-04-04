@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { MutableRefObject, useEffect, useRef } from 'react';
 
 import moment from 'moment/moment';
 import { IdType, Timeline, TimelineOptions } from 'vis-timeline/peer';
@@ -11,7 +11,11 @@ interface SelectEvent {
   event: Event;
 }
 
-export default function TimelineComponent() {
+export default function TimelineComponent(props: {
+  draggedAction: MutableRefObject<ActionItem | null>;
+}) {
+  const { draggedAction } = props;
+
   const timelineDivRef = useRef<HTMLDivElement>(null);
   const timeline = useRef<Timeline | null>(null);
 
@@ -25,8 +29,6 @@ export default function TimelineComponent() {
     item: UnsafeActionItemPartial,
     callback: (item: UnsafeActionItemPartial | null) => void
   ) {
-    const actionItem = convertToSafeActionItem(item);
-    rotationManager.addActions(actionItem);
     callback(null);
   }
 
@@ -194,6 +196,13 @@ export default function TimelineComponent() {
 
     setTimeout(() => {
       childrenEntered.clear();
+
+      if (draggedAction.current == null) {
+        throw new Error('Dragged action cannot be null');
+      }
+      draggedAction.current.start = getCursorTime(event);
+      rotationManager.addActions(draggedAction.current!);
+
       rotationManager.removeCursor();
     }, 1);
   }
