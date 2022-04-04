@@ -24,7 +24,7 @@ function ActionListItem(props: {
 
     const img = new Image();
     img.src = iconPath;
-    event.dataTransfer.setDragImage(img, 32, 32);
+    event.dataTransfer.setDragImage(img, 16, 16);
 
     draggedAction.current = item;
   }

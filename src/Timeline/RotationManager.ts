@@ -111,33 +111,21 @@ export default class RotationManager {
       return 0;
     }
 
-    // Binary search shamelessly copied from https://stackoverflow.com/a/69561088/5090107
+    // Binary search generously contributed by Shinu
     let startIdx = 0;
-    let endIdx = this.snapPoints.length - 1;
-    let midIdx = Math.floor((startIdx + endIdx) / 2);
+    let stepSize = 2 ** Math.floor(Math.log2(this.snapPoints.length));
 
-    while (startIdx < endIdx) {
-      const snapPoint = this.snapPoints[midIdx];
-      if (snapPoint === time) {
-        return snapPoint;
+    while (stepSize >= 1) {
+      const pivotPoint = this.snapPoints[startIdx + stepSize];
+      if (pivotPoint && pivotPoint <= time) {
+        startIdx += stepSize;
       }
 
-      if (startIdx >= endIdx) {
-        break;
-      }
-
-      if (snapPoint > time) {
-        endIdx = midIdx - 1;
-      } else {
-        startIdx = midIdx + 1;
-      }
-
-      midIdx = Math.floor((startIdx + endIdx) / 2);
+      stepSize /= 2;
     }
 
-    // Return the closest between the last value checked and its surrounding neighbors
-    const firstIdx = Math.max(midIdx - 1, 0);
-    const neighbors = this.snapPoints.slice(firstIdx, midIdx + 2);
+    // Return the closest between the last value checked and its right neighbor
+    const neighbors = this.snapPoints.slice(startIdx, startIdx + 2);
     const best = neighbors.reduce((b, el) => (Math.abs(el - time) < Math.abs(b - time) ? el : b));
     return best;
   }
