@@ -28,14 +28,18 @@ const actions: Action[] = [
     cooldown: 2.5 * 1000,
     mpCost: 300,
   }),
-  // {
-  //   name: 'Fester',
-  //   potency: 300,
-  //   castTime: 0,
-  //   nextGCD: 0,
-  //   cooldown: 0,
-  //   mpCost: 0,
-  // },
+  new Action({
+    job: abbr,
+    name: 'Fester',
+    level: 10,
+    actionType: 'ability',
+    potency: 300,
+    castTime: 0,
+    damageDelay: 0, // TODO: Get damage delay
+    nextGCD: 0,
+    cooldown: 0,
+    mpCost: 0,
+  }),
 ];
 
 export default class Summoner implements Job {

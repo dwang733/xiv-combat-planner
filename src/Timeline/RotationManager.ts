@@ -9,15 +9,19 @@ function createActionToTimelinePipeline(
   timelineItems: DataSet<SafeTimelineItem>
 ) {
   return createNewDataPipeFrom(actionItems)
-    .flatMap((gcdItem) => {
+    .flatMap((action) => {
+      if (!action.isGCD) {
+        return [action];
+      }
+
       const gcdBackgroundItem: ActionItemPartial = {
-        id: `${gcdItem.id}-gcdBackground`,
+        id: `${action.id}-gcdBackground`,
         content: '',
-        start: gcdItem.start,
-        end: gcdItem.start + gcdItem.nextGCD,
+        start: action.start,
+        end: action.start + action.nextGCD,
         type: 'background',
       };
-      return [gcdItem, gcdBackgroundItem];
+      return [action, gcdBackgroundItem];
     })
     .to(timelineItems);
 }
@@ -102,6 +106,7 @@ export default class RotationManager {
    * @returns The time of the closest snap point.
    */
   getClosestSnapPoint(time: number): number {
+    // TODO: Fix snapping
     if (this.snapPoints.length === 0) {
       return 0;
     }
@@ -172,34 +177,40 @@ export default class RotationManager {
       this.actionItemsDataSet.add(actions);
     }
 
-    // Recalculate start time for affected actions
+    /* Recalculate start time for affected actions */
     const startIndex = Math.min(addIndex, removeIndex);
-    // let lastGCD = this.actionItemsArray[startIndex];
-    for (let i = startIndex; i < this.actionItemsArray.length; i += 1) {
-      const currItem = this.actionItemsArray[i];
+    const prevAction = this.actionItemsArray[startIndex - 1];
+    let nextActionStart = prevAction
+      ? prevAction.start + Math.max(prevAction.castTime, ANIMATION_LOCK)
+      : 0;
 
-      if (i === 0) {
-        currItem.start = 0;
+    let prevGCDIndex = startIndex - 1;
+    while (prevGCDIndex >= 0 && !this.actionItemsArray[prevGCDIndex].isGCD) {
+      prevGCDIndex -= 1;
+    }
+    let nextGCDStart =
+      prevGCDIndex >= 0
+        ? this.actionItemsArray[prevGCDIndex].start + this.actionItemsArray[prevGCDIndex].nextGCD
+        : 0;
+
+    for (let i = startIndex; i < this.actionItemsArray.length; i += 1) {
+      const currentAction = this.actionItemsArray[i];
+      if (currentAction.isGCD) {
+        currentAction.start = Math.max(nextActionStart, nextGCDStart);
+        nextGCDStart = currentAction.start + currentAction.nextGCD;
       } else {
-        const prevItem = this.actionItemsArray[i - 1];
-        console.log(prevItem.start, currItem.start, currItem.isGCD);
-        // TODO: Handle oGCDs
-        // if (currItem.isGCD) {
-        //   currItem.start = lastGCD.start + prevItem.nextGCD;
-        //   lastGCD = currItem;
-        // } else {
-        //   currItem.start = prevItem.start + ANIMATION_LOCK;
-        // }
-        currItem.start = prevItem.start + prevItem.nextGCD;
+        currentAction.start = nextActionStart;
       }
 
-      this.actionItemsDataSet.updateOnly(currItem);
+      nextActionStart = currentAction.start + Math.max(currentAction.castTime, ANIMATION_LOCK);
+      this.actionItemsDataSet.updateOnly(currentAction);
     }
 
     this.recalculateSnapPoints();
   }
 
   private recalculateSnapPoints() {
+    // TODO: Redo snap points calculation
     const newSnapPoints = this.actionItemsArray.flatMap((item) => {
       const itemSnapPoints = [item.start];
       if (item.nextGCD > 0) {
